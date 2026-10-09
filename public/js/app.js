@@ -128,15 +128,24 @@
     location.href = "/";
   };
 
+  // ---------- delete account (inline two-step confirm; no native dialogs) ----------
   const delBtn = $("deleteAccountBtn");
-  if (delBtn) delBtn.onclick = async () => {
-    if (!confirm("Delete your Menstars account and ALL your data? This can't be undone.")) return;
-    if (!confirm("Last chance — really delete everything?")) return;
-    try {
-      await api("/api/auth/account", { method: "DELETE" });
-      location.href = "/";
-    } catch (e) { alert(e.message); }
-  };
+  const delStep1 = $("deleteStep1"), delStep2 = $("deleteStep2"), delStep3 = $("deleteStep3");
+  if (delBtn && delStep2 && delStep3) {
+    const showStep = (n) => {
+      delStep1.hidden = n !== 1; delStep2.hidden = n !== 2; delStep3.hidden = n !== 3;
+    };
+    delBtn.onclick = () => showStep(2);
+    $("deleteAccountCancel1").onclick = () => showStep(1);
+    $("deleteAccountNext").onclick = () => showStep(3);
+    $("deleteAccountCancel2").onclick = () => showStep(1);
+    $("deleteAccountYes").onclick = async () => {
+      try {
+        await api("/api/auth/account", { method: "DELETE" });
+        location.href = "/";
+      } catch (e) { alert(e.message); }
+    };
+  }
 
   // ---------- top 7 ----------
   async function loadTop7() {
