@@ -7,21 +7,21 @@
   --radius:14px;
   color-scheme:dark;
 }
-/* Day mode: TikTok red + white */
+/* Day mode: deep black + Cryptok blue */
 [data-theme="day"]{
-  --bg:#ffffff; --bg2:#f3f4f6; --card:#ffffff; --card2:#f6f7f9;
-  --lime:#fe2c55; --lime-soft:rgba(254,44,85,.08); --lime-dark:#d61f44;
+  --bg:#0f0f0f; --bg2:#161616; --card:#141414; --card2:#1c1c1c;
+  --lime:#4374c0; --lime-soft:rgba(67,116,192,.14); --lime-dark:#3560a3;
   --ink:#ffffff;
-  --text:#161823; --muted:#5f6472; --faint:#9aa0ad;
-  --border:#e2e4ea; --danger:#d61f44;
-  color-scheme:light;
+  --text:#dbdbdb; --muted:#a8a8a8; --faint:#7d7d7d;
+  --border:#2a2a2a; --danger:#e5484d;
+  color-scheme:dark;
 }
-[data-theme="day"] .site-header{background:rgba(255,255,255,.96)}
-[data-theme="day"] .bottom-nav{background:rgba(255,255,255,.98)}
-[data-theme="day"] .top7{box-shadow:0 0 24px rgba(254,44,85,.10)}
-[data-theme="day"] .reward-band{box-shadow:0 0 28px rgba(254,44,85,.08)}
+[data-theme="day"] .site-header{background:rgba(15,15,15,.96)}
+[data-theme="day"] .bottom-nav{background:rgba(15,15,15,.98)}
+[data-theme="day"] .top7{box-shadow:0 0 24px rgba(67,116,192,.14)}
+[data-theme="day"] .reward-band{box-shadow:0 0 28px rgba(67,116,192,.12)}
 [data-theme="day"] .chip{color:var(--text)}
-[data-theme="day"] .form-err{color:#b3122f;background:rgba(254,44,85,.08)}
+[data-theme="day"] .form-err{color:#ff8a8a;background:rgba(67,116,192,.10)}
 /* Day/night toggle: below the header, far right */
 .theme-toggle{position:fixed;top:76px;right:14px;z-index:60;width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--border);font-size:19px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;padding:0}
 .theme-toggle:hover{border-color:var(--lime)}
