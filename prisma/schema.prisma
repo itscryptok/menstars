@@ -71,3 +71,10 @@ model Session {
 
   @@index([userId])
 }
+
+// Key/value admin settings (e.g. admin_password_hash). Admin-only, never public.
+model AdminSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

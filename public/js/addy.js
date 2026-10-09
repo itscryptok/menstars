@@ -15,11 +15,19 @@
 
   function showLogin() {
     $("addyLogin").style.display = "block";
+    $("addySetup").style.display = "none";
+    $("addyDash").style.display = "none";
+    $("addyLogout").style.display = "none";
+  }
+  function showSetup() {
+    $("addySetup").style.display = "block";
+    $("addyLogin").style.display = "none";
     $("addyDash").style.display = "none";
     $("addyLogout").style.display = "none";
   }
   function showDash() {
     $("addyLogin").style.display = "none";
+    $("addySetup").style.display = "none";
     $("addyDash").style.display = "block";
     $("addyLogout").style.display = "inline-flex";
   }
@@ -27,10 +35,26 @@
   async function boot() {
     try {
       const d = await api("/api/addy/me");
-      if (d.admin) { showDash(); initTabs(); loadOverview(); }
-      else showLogin();
+      if (d.admin) { showDash(); initTabs(); loadOverview(); return; }
+    } catch { /* fall through */ }
+    try {
+      const s = await api("/api/addy/setup-needed");
+      if (s.needed) showSetup(); else showLogin();
     } catch { showLogin(); }
   }
+
+  $("setupForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("setupErr");
+    err.style.display = "none";
+    const p1 = $("setupPass").value, p2 = $("setupPass2").value;
+    if (p1 !== p2) { err.textContent = "Passwords do not match."; err.style.display = "block"; return; }
+    try {
+      await api("/api/addy/setup", { method: "POST", body: JSON.stringify({ password: p1 }) });
+      $("setupPass").value = ""; $("setupPass2").value = "";
+      showDash(); initTabs(); loadOverview();
+    } catch (ex) { err.textContent = ex.message; err.style.display = "block"; }
+  });
 
   $("addyForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -219,4 +243,17 @@
   }
 
   boot();
+
+  $("pwForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("pwErr");
+    err.style.display = "none";
+    try {
+      await api("/api/addy/change-password", { method: "POST", body: JSON.stringify({ currentPassword: $("pwCur").value, newPassword: $("pwNew").value }) });
+      $("pwCur").value = ""; $("pwNew").value = "";
+      err.style.display = "block"; err.style.color = "var(--lime, #c8f169)";
+      err.textContent = "Password changed.";
+      setTimeout(() => { err.style.display = "none"; err.style.color = ""; }, 3000);
+    } catch (ex) { err.textContent = ex.message; err.style.display = "block"; }
+  });
 })();

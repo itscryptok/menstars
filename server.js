@@ -655,7 +655,7 @@ app.post("/api/addy/login", async (req, res) => {
       return res.status(429).json({ error: "Too many attempts. Wait a minute and try again." });
     const ip = clientIp(req);
     adminAttempts.set(ip, [...(adminAttempts.get(ip) || []), Date.now()]);
-    const hash = process.env.ADMIN_PASSWORD_HASH || "";
+    const hash = await getAdminHash();
     const password = String(req.body.password || "");
     if (!hash || !password || !(await bcrypt.compare(password, hash))) {
       return res.status(401).json({ error: "Wrong password." });
@@ -678,6 +678,71 @@ app.post("/api/addy/logout", (req, res) => {
 });
 
 app.get("/api/addy/me", (req, res) => res.json({ admin: verifyAdmin(req) }));
+
+// ---------- admin password: DB-backed first-run setup ----------
+// The bcrypt hash lives in AdminSetting (key: admin_password_hash); the
+// ADMIN_PASSWORD_HASH env var is only a fallback. Setup is allowed exactly
+// once — while no hash exists in the DB.
+async function getAdminHash() {
+  try {
+    const s = await prisma.adminSetting.findUnique({ where: { key: "admin_password_hash" } });
+    if (s && s.value) return s.value;
+  } catch { /* table may not exist yet on very first boot */ }
+  return process.env.ADMIN_PASSWORD_HASH || "";
+}
+
+app.get("/api/addy/setup-needed", async (req, res) => {
+  try {
+    const s = await prisma.adminSetting.findUnique({ where: { key: "admin_password_hash" } });
+    res.json({ needed: !s });
+  } catch {
+    res.json({ needed: true });
+  }
+});
+
+app.post("/api/addy/setup", async (req, res) => {
+  try {
+    if (adminRateLimited(req))
+      return res.status(429).json({ error: "Too many attempts. Wait a minute and try again." });
+    const ip = clientIp(req);
+    adminAttempts.set(ip, [...(adminAttempts.get(ip) || []), Date.now()]);
+    const existing = await prisma.adminSetting.findUnique({ where: { key: "admin_password_hash" } }).catch(() => null);
+    if (existing) return res.status(403).json({ error: "Admin password is already set." });
+    const password = String(req.body.password || "");
+    if (password.length < 10) return res.status(400).json({ error: "Password must be at least 10 characters." });
+    const hash = await bcrypt.hash(password, 12);
+    await prisma.adminSetting.upsert({
+      where: { key: "admin_password_hash" },
+      update: { value: hash },
+      create: { key: "admin_password_hash", value: hash },
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("addy setup error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+app.post("/api/addy/change-password", requireAdmin, async (req, res) => {
+  try {
+    const cur = String(req.body.currentPassword || "");
+    const next = String(req.body.newPassword || "");
+    const hash = await getAdminHash();
+    if (!hash || !(await bcrypt.compare(cur, hash)))
+      return res.status(401).json({ error: "Current password is wrong." });
+    if (next.length < 10) return res.status(400).json({ error: "New password must be at least 10 characters." });
+    const nh = await bcrypt.hash(next, 12);
+    await prisma.adminSetting.upsert({
+      where: { key: "admin_password_hash" },
+      update: { value: nh },
+      create: { key: "admin_password_hash", value: nh },
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("addy change-password error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
 
 app.get("/api/addy/overview", requireAdmin, async (req, res) => {
   try {

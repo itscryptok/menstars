@@ -45,6 +45,24 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
     </form>
   </div>
 
+  <!-- FIRST-RUN SETUP -->
+  <div id="addySetup" class="form-card" style="display:none">
+    <h2>Set admin password</h2>
+    <p class="sub">This is the first run — choose the password for this admin area (min. 10 characters). Password only, no username.</p>
+    <div class="form-err" id="setupErr"></div>
+    <form id="setupForm">
+      <div class="field">
+        <label for="setupPass">New password</label>
+        <input class="input" id="setupPass" type="password" autocomplete="new-password" required minlength="10">
+      </div>
+      <div class="field">
+        <label for="setupPass2">Confirm password</label>
+        <input class="input" id="setupPass2" type="password" autocomplete="new-password" required minlength="10">
+      </div>
+      <button class="btn block" type="submit">Set password</button>
+    </form>
+  </div>
+
   <!-- DASHBOARD -->
   <div id="addyDash" style="display:none">
     <div class="priv-note">🔒 Privacy rule: admin tools <b>never</b> show users' private engager notes or notepad contents. Those fields are excluded from every query on this page.</div>
@@ -127,6 +145,21 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
     <section id="ap-system" hidden>
       <h2>System</h2>
       <div id="sysInfo"></div>
+      <h3 style="margin-top:18px">Change admin password</h3>
+      <div class="form-card" style="max-width:420px">
+        <div class="form-err" id="pwErr"></div>
+        <form id="pwForm">
+          <div class="field">
+            <label for="pwCur">Current password</label>
+            <input class="input" id="pwCur" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="field">
+            <label for="pwNew">New password (min. 10 characters)</label>
+            <input class="input" id="pwNew" type="password" autocomplete="new-password" required minlength="10">
+          </div>
+          <button class="btn small" type="submit">Change password</button>
+        </form>
+      </div>
     </section>
   </div>
 </main>
