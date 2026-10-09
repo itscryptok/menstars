@@ -138,6 +138,20 @@ app.get("/api/db-ping", async (req, res) => {
   } catch (e) {
     out.prisma_fatal = String(e.message).slice(0, 200);
   }
+  try {
+    const t0 = Date.now();
+    const r = await race(prisma.user.findMany({ take: 1 }), 20000);
+    out.prisma_model = { ok: r.ok, ms: Date.now() - t0, error: (r.error || "").slice(0, 200), count: r.ok && r.v ? r.v.length : null };
+  } catch (e) {
+    out.prisma_model = { ok: false, error: String(e.message).slice(0, 200) };
+  }
+  try {
+    const t0 = Date.now();
+    const h = await race(require("bcryptjs").hash("testpass123", 10), 30000);
+    out.bcrypt = { ok: h.ok, ms: Date.now() - t0, error: (h.error || "").slice(0, 200) };
+  } catch (e) {
+    out.bcrypt = { ok: false, error: String(e.message).slice(0, 200) };
+  }
   res.json(out);
 });
 
