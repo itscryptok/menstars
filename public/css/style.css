@@ -196,3 +196,7 @@ main.with-nav{padding-bottom:86px}
   .btn{padding:10px 16px}
   #userChip{display:none}
 }
+.read-more{font-weight:700;white-space:nowrap}
+.read-more::after{content:" »"}
+#readLessLink.read-more::after{content:" «"}
+.reward-more{scroll-margin-top:20px}

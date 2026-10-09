@@ -48,7 +48,7 @@
   <section class="hero">
     <span class="kicker"><span class="rule"></span>Menstars · My Engager Network</span>
     <h1>Never lose track of the people <span class="lime">who support you.</span></h1>
-    <p class="lede">Social media is crowded, and it&rsquo;s easy to lose track of the people who support you. Build your link list of top engagers &mdash; and keep adding to it as you discover more &mdash; so you can always find and reward the right people when it matters.</p>
+    <p class="lede">Social media is crowded, and it&rsquo;s easy to lose track of the people who support you. Build your link list of top engagers &mdash; and keep adding to it as you discover more &mdash; so you can always find and reward the right people when it matters. <a href="#reward-more" id="readMoreLink" class="read-more">Read more</a></p>
     <div class="hero-cta">
       <a class="btn" href="/login?mode=signup">Build my network</a>
       <a class="btn ghost" href="#how">How it works</a>
@@ -58,6 +58,25 @@
       <span class="slogan"><b>It&rsquo;s a MEN&rsquo;s world.</b></span>
       <span class="slogan"><b>Star my Engagers.</b></span>
     </div>
+  </section>
+
+  <section class="section reward-more" id="reward-more" hidden>
+    <h2>Reward them <span class="lime">where it counts.</span></h2>
+    <p class="section-sub">Open the link right from your list to their TikTok page — then pick your way to give back:</p>
+    <ul class="checks">
+      <li>Purchase products you need from their shop or showcase</li>
+      <li>Use their affiliate links and services so they get rewarded</li>
+      <li>Join their live and reward them with gifts</li>
+      <li>Follow them and genuinely engage with their content</li>
+      <li>Share their videos with your own audience</li>
+      <li>Leave thoughtful comments that lift their posts in the algorithm</li>
+      <li>Save their videos — saves carry big weight for reach</li>
+      <li>Shout them out in your own videos or captions</li>
+      <li>Duet or stitch their content and collaborate</li>
+      <li>Recommend them to brands for paid deals</li>
+      <li>Send a direct thank-you — recognition keeps true supporters close</li>
+    </ul>
+    <p style="margin-top:14px"><a href="#" id="readLessLink" class="read-more">Show less</a></p>
   </section>
 
   <section class="section steps-section">
@@ -108,5 +127,24 @@
   </div>
 </footer>
 <script src="/js/top-engagers.js"></script>
+<script>
+(function(){
+  var more=document.getElementById('reward-more');
+  var open=document.getElementById('readMoreLink');
+  var close=document.getElementById('readLessLink');
+  if(!more||!open) return;
+  open.addEventListener('click',function(e){
+    e.preventDefault();
+    more.hidden=false;
+    more.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  if(close) close.addEventListener('click',function(e){
+    e.preventDefault();
+    more.hidden=true;
+    open.scrollIntoView({behavior:'smooth',block:'center'});
+    open.focus({preventScroll:true});
+  });
+})();
+</script>
 </body>
 </html>
