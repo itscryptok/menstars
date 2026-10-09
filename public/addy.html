@@ -6,6 +6,8 @@
 <title>Admin — Menstars</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<script>try{if(localStorage.getItem('menstars-theme')==='day')document.documentElement.setAttribute('data-theme','day')}catch(e){}</script>
+<script src="/js/theme.js" defer></script>
 <link rel="stylesheet" href="/css/style.css">
 <style>
 .addy-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
@@ -23,6 +25,7 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
 </style>
 </head>
 <body>
+<button id="themeToggle" class="theme-toggle" aria-label="Toggle day/night mode">🌙</button>
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="/"><span class="logo-mark">M</span><span>Menstars <small>admin</small></span></a>

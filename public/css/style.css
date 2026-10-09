@@ -5,7 +5,26 @@
   --text:#f2f3f5; --muted:#a9afbd; --faint:#7d8494;
   --border:#4b5260; --danger:#e5484d;
   --radius:14px;
+  color-scheme:dark;
 }
+/* Day mode: TikTok red + white */
+[data-theme="day"]{
+  --bg:#ffffff; --bg2:#f3f4f6; --card:#ffffff; --card2:#f6f7f9;
+  --lime:#fe2c55; --lime-soft:rgba(254,44,85,.08); --lime-dark:#d61f44;
+  --ink:#ffffff;
+  --text:#161823; --muted:#5f6472; --faint:#9aa0ad;
+  --border:#e2e4ea; --danger:#d61f44;
+  color-scheme:light;
+}
+[data-theme="day"] .site-header{background:rgba(255,255,255,.96)}
+[data-theme="day"] .bottom-nav{background:rgba(255,255,255,.98)}
+[data-theme="day"] .top7{box-shadow:0 0 24px rgba(254,44,85,.10)}
+[data-theme="day"] .reward-band{box-shadow:0 0 28px rgba(254,44,85,.08)}
+[data-theme="day"] .chip{color:var(--text)}
+[data-theme="day"] .form-err{color:#b3122f;background:rgba(254,44,85,.08)}
+/* Day/night toggle: below the header, far right */
+.theme-toggle{position:fixed;top:76px;right:14px;z-index:60;width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--border);font-size:19px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;padding:0}
+.theme-toggle:hover{border-color:var(--lime)}
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;min-height:100vh}
