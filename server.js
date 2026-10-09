@@ -102,6 +102,11 @@ async function getHandlesMap(userId) {
 // ---------- health ----------
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
+// Temporary boot diagnostic (messages only, no secrets). Remove once stable.
+app.get("/api/boot-status", (req, res) => {
+  res.json(global.__menBoot || { steps: [], dbOk: false, note: "boot did not run" });
+});
+
 // ---------- auth ----------
 app.post("/api/auth/signup", async (req, res) => {
   try {
