@@ -95,18 +95,24 @@
     ].map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
     $("ovPlatforms").innerHTML = `<table class="adm"><tr><th>Platform</th><th>Engagers</th><th>Stars</th><th>Claimed handles</th></tr>` +
       d.perPlatform.map((p) => `<tr><td>${esc(PLATFORMS[p.platform] || p.platform)}</td><td>${p.engagers}</td><td>★ ${p.stars}</td><td>${p.claimedHandles}</td></tr>`).join("") + `</table>`;
+    $("ovNiches").innerHTML = (d.perNiche && d.perNiche.length)
+      ? `<table class="adm"><tr><th>Niche</th><th>Contributors</th></tr>` +
+        d.perNiche.map((n) => `<tr><td>${esc(n.niche)}</td><td>${n.contributors}</td></tr>`).join("") + `</table>`
+      : '<div class="empty">No niches picked yet.</div>';
   }
 
   // ---------- users ----------
   let userSkip = 0;
   async function loadUsers() {
     const q = $("userSearch").value.trim();
-    const d = await api(`/api/addy/users?q=${encodeURIComponent(q)}&take=25&skip=${userSkip}`);
+    const niche = $("userNiche").value;
+    const d = await api(`/api/addy/users?q=${encodeURIComponent(q)}&niche=${encodeURIComponent(niche)}&take=25&skip=${userSkip}`);
     const pages = Math.ceil(d.total / 25);
-    let h = `<table class="adm"><tr><th>Contributor</th><th>Promotes</th><th>Handles</th><th>Engagers</th><th>Joined</th><th>Status</th><th></th></tr>`;
+    let h = `<table class="adm"><tr><th>Contributor</th><th>Niche</th><th>Promotes</th><th>Handles</th><th>Engagers</th><th>Joined</th><th>Status</th><th></th></tr>`;
     for (const u of d.users) {
       const handles = u.handles.map((x) => `${esc(PLATFORMS[x.platform] || x.platform)}: @${esc(x.handle)}`).join("<br>") || "—";
       h += `<tr><td><b>${esc(u.displayName || "(no name)")}</b><br><span style="color:var(--muted)">${esc(u.email)}</span></td>
+        <td>${u.niche ? esc(u.niche) : '<span style="color:var(--faint)">—</span>'}</td>
         <td>${u.topBrand ? esc(u.topBrand) : '<span style="color:var(--faint)">—</span>'}</td>
         <td>${handles}</td><td>${u._count.engagers}</td>
         <td>${new Date(u.createdAt).toLocaleDateString()}</td>
@@ -144,14 +150,26 @@
   });
 
   // ---------- leaderboard ----------
+  function boardNiche() { return $("boardNiche") ? $("boardNiche").value : ""; }
   async function loadBoard() {
-    const d = await api("/api/addy/leaderboard?platform=" + boardPlatform);
+    const d = await api("/api/addy/leaderboard?platform=" + boardPlatform + "&niche=" + encodeURIComponent(boardNiche()));
     if (!d.top.length) { $("boardTable").innerHTML = '<div class="empty">No data yet.</div>'; return; }
-    $("boardTable").innerHTML = `<table class="adm"><tr><th>#</th><th>Handle</th><th>Total stars</th><th>Contributors</th><th>Profile</th></tr>` +
+    $("boardTable").innerHTML = `<table class="adm"><tr><th>#</th><th>Handle</th><th>Total stars</th><th>Contributors</th><th>Niches</th><th>Profile</th></tr>` +
       d.top.map((t) => `<tr><td><b>${t.rank}</b></td><td>@${esc(t.handle)}${t.link.kind === "internal" ? ' <span class="reg-badge">MEN</span>' : ""}</td>
         <td>★ ${t.totalStars}</td><td>${t.contributors}</td>
+        <td>${(t.niches && t.niches.length) ? t.niches.map(esc).join(", ") : '<span style="color:var(--faint)">—</span>'}</td>
         <td><a href="${esc(t.link.url)}"${t.link.kind === "external" ? ' target="_blank" rel="noopener"' : ""}>open ↗</a></td></tr>`).join("") + `</table>`;
   }
+  $("boardNicheBtn").onclick = () => {
+    // keep the advertiser CSV exports in sync with the niche filter
+    const n = boardNiche();
+    $("csvBtns").querySelectorAll("a").forEach((a) => {
+      const u = new URL(a.href, location.origin);
+      if (n) u.searchParams.set("niche", n); else u.searchParams.delete("niche");
+      a.href = u.pathname + u.search;
+    });
+    loadBoard();
+  };
 
   // ---------- stars ----------
   async function loadStars() {

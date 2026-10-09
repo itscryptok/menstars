@@ -38,6 +38,12 @@
     $("acctSince").textContent = new Date(me.createdAt).toLocaleDateString();
     $("pfName").value = me.displayName || "";
     $("pfBrand").value = me.topBrand || "";
+    const NICHES = ["Beauty","Food","Comedy","Fitness","Fashion","Music","Dance","Gaming","Education","Business","Lifestyle","Sports","Travel","Tech","Other"];
+    const pfNiche = $("pfNiche"), pfOther = $("pfNicheOther"), pfOtherWrap = $("pfNicheOtherWrap");
+    if (me.niche && NICHES.includes(me.niche)) { pfNiche.value = me.niche; pfOtherWrap.style.display = "none"; }
+    else if (me.niche) { pfNiche.value = "Other"; pfOther.value = me.niche; pfOtherWrap.style.display = "block"; }
+    else { pfNiche.value = ""; pfOtherWrap.style.display = "none"; }
+    pfNiche.onchange = () => { pfOtherWrap.style.display = pfNiche.value === "Other" ? "block" : "none"; };
     renderTabs();
     renderHandlesForm();
     await refreshAll();
@@ -58,7 +64,12 @@
     try {
       const d = await api("/api/account", {
         method: "PUT",
-        body: JSON.stringify({ displayName: $("pfName").value.trim(), topBrand: $("pfBrand").value.trim() }),
+        body: JSON.stringify({
+          displayName: $("pfName").value.trim(),
+          topBrand: $("pfBrand").value.trim(),
+          niche: $("pfNiche").value,
+          nicheOther: $("pfNicheOther").value.trim(),
+        }),
       });
       me = d.user;
       $("userChip").textContent = me.displayName || me.email;
@@ -86,14 +97,31 @@
     $("top7sub").textContent = "Your highest-starred engagers on " + PLATFORMS[platform] + ".";
   }
 
-  // ---------- bottom nav ----------
-  document.querySelectorAll(".bottom-nav button").forEach((b) => {
-    b.onclick = () => {
-      document.querySelectorAll(".bottom-nav button").forEach((x) => x.classList.remove("active"));
+  // ---------- empty-state CTAs (delegated) ----------
+  document.addEventListener("click", (e) => {
+    const f = e.target.closest("[data-focus]");
+    if (f) {
+      const el = $(f.dataset.focus);
+      if (el) { el.focus(); el.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      return;
+    }
+    const g = e.target.closest("[data-goto]");
+    if (g) {
+      const link = document.querySelector(`.app-nav a[data-view="${g.dataset.goto}"]`);
+      if (link) link.click();
+    }
+  });
+
+  // ---------- top nav ----------
+  document.querySelectorAll(".app-nav a[data-view]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault();
+      document.querySelectorAll(".app-nav a[data-view]").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
       ["home", "notes", "profile"].forEach((v) => { $("view-" + v).hidden = v !== b.dataset.view; });
       if (b.dataset.view === "notes") loadNotes();
       if (b.dataset.view === "profile") renderMyProfileLinks();
+      window.scrollTo(0, 0);
     };
   });
 
@@ -117,7 +145,9 @@
     const d = await api("/api/top7?platform=" + platform);
     const ol = $("top7list");
     if (!d.top.length) {
-      ol.innerHTML = '<div class="empty">No starred engagers yet on ' + esc(PLATFORMS[platform]) + '. Add someone below and give them their first star. ★</div>';
+      ol.innerHTML = `<div class="empty-state"><div class="emoji">🌟</div><h4>No starred engagers yet</h4>
+        <p>Your top supporters on ${esc(PLATFORMS[platform])} will show up here once you give them stars.</p>
+        <button class="btn" data-focus="handleInput">Track your first engager</button></div>`;
       return;
     }
     ol.innerHTML = d.top.map((e) => {
@@ -135,7 +165,9 @@
     const box = $("engagerList");
     $("acctCount").textContent = d.engagers.length + " on " + PLATFORMS[platform];
     if (!d.engagers.length) {
-      box.innerHTML = '<div class="empty">Nobody tracked yet. Your ' + esc(PLATFORMS[platform]) + ' list starts with the field above. ↑</div>';
+      box.innerHTML = `<div class="empty-state"><div class="emoji">👀</div><h4>Your ${esc(PLATFORMS[platform])} list is empty</h4>
+        <p>Think of someone who always shows up for you — add their username and they're on your list.</p>
+        <button class="btn" data-focus="handleInput">Add someone now</button></div>`;
       return;
     }
     box.innerHTML = d.engagers.map((e) => {
@@ -225,7 +257,9 @@
     }
     $("addedMeSub").textContent = "People who added @" + d.myHandle + " on " + PLATFORMS[platform] + ".";
     if (!d.entries.length) {
-      ul.innerHTML = '<div class="empty">Nobody yet — share your handle and collect those stars. ★</div>';
+      ul.innerHTML = `<div class="empty-state"><div class="emoji">💫</div><h4>No one's added you yet</h4>
+        <p>Claim your handle so other contributors can find you — then every list you're on shows up here.</p>
+        <button class="btn" data-goto="profile">Claim my handle</button></div>`;
       return;
     }
     ul.innerHTML = d.entries.map((e) => {
@@ -240,7 +274,12 @@
   async function loadNotes() {
     const d = await api("/api/notes");
     const box = $("notesList");
-    if (!d.notes.length) { box.innerHTML = '<div class="empty">No notes yet. Your private scratch pad is above.</div>'; return; }
+    if (!d.notes.length) {
+      box.innerHTML = `<div class="empty-state"><div class="emoji">🗒️</div><h4>Nothing here yet</h4>
+        <p>Your private notepad — ideas, reminders, anything. Only you can see it, always.</p>
+        <button class="btn" data-focus="noteTitle">Write your first note</button></div>`;
+      return;
+    }
     box.innerHTML = d.notes.map((n) => `
       <div class="note" data-id="${esc(n.id)}">
         <h4>${esc(n.title)}</h4><p>${esc(n.body)}</p>

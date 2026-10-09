@@ -14,6 +14,12 @@
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="/app"><span class="logo-mark">M</span><span>Menstars</span></a>
+    <nav class="app-nav">
+      <a href="#" data-view="home" class="active">Dashboard</a>
+      <a href="/top-engagers">Top Engagers</a>
+      <a href="#" data-view="notes">Notepad</a>
+      <a href="#" data-view="profile">Profile</a>
+    </nav>
     <span class="nav-spacer"></span>
     <span id="userChip" style="color:var(--muted);font-size:14px"></span>
     <button class="btn ghost small" id="logoutBtn">Log out</button>
@@ -87,10 +93,24 @@
     <div class="app-head"><h2>🙋 My profile</h2></div>
     <div class="card">
       <h3>Profile</h3>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:14px">Your display name and the brand you promote show on your public in-app profile.</p>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:14px">Your display name, niche, and the brand you promote show on your public in-app profile.</p>
       <div class="field">
         <label for="pfName">Display name</label>
         <input class="input" id="pfName" maxlength="60" placeholder="Your name">
+      </div>
+      <div class="field">
+        <label for="pfNiche">My niche (optional)</label>
+        <select class="input" id="pfNiche">
+          <option value="">Choose one…</option>
+          <option>Beauty</option><option>Food</option><option>Comedy</option><option>Fitness</option>
+          <option>Fashion</option><option>Music</option><option>Dance</option><option>Gaming</option>
+          <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
+          <option>Travel</option><option>Tech</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="pfNicheOtherWrap" style="display:none">
+        <label for="pfNicheOther">Tell us your niche</label>
+        <input class="input" id="pfNicheOther" maxlength="40" placeholder="e.g. Gardening, Real estate…">
       </div>
       <div class="field">
         <label for="pfBrand">Top brand I promote (optional) <i class="info-icon" data-tip="pfBrandTip">i</i></label>
@@ -119,12 +139,6 @@
     </div>
   </section>
 </main>
-
-<nav class="bottom-nav">
-  <button data-view="home" class="active"><span class="ico">🏠</span>Home</button>
-  <button data-view="notes"><span class="ico">🗒️</span>Notepad</button>
-  <button data-view="profile"><span class="ico">🙋</span>My Profile</button>
-</nav>
 
 <script src="/js/app.js"></script>
 </body>

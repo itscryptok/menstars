@@ -163,8 +163,32 @@ main.with-nav{padding-bottom:86px}
 .plink:hover{border-color:var(--lime);text-decoration:none}
 .plink .tag{margin-left:auto;color:var(--faint);font-size:12.5px;font-weight:600}
 .notice{background:var(--lime-soft);border:1px solid var(--lime);border-radius:12px;padding:12px 16px;font-size:14px;margin:16px 0}
+/* onboarding */
+.ob-card{max-width:560px}
+.ob-card h2{margin-bottom:6px}
+.ob-card .sub{color:var(--muted);font-size:14.5px;margin-bottom:16px}
+.ob-progress{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;color:var(--muted);font-size:13.5px;font-weight:700}
+.ob-dots{display:flex;gap:8px}
+.ob-dots .dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background .2s}
+.ob-dots .dot.active{background:var(--lime)}
+.ob-actions{display:grid;gap:10px;margin-top:18px}
+.ob-skipall{text-align:center;margin-top:14px;font-size:14px}
+/* top app nav */
+.app-nav{display:flex;gap:4px;align-items:center;margin-left:auto}
+.app-nav a{padding:8px 13px;border-radius:10px;font-size:14px;font-weight:700;color:var(--muted);white-space:nowrap}
+.app-nav a:hover{color:var(--lime);text-decoration:none}
+.app-nav a.active{color:var(--lime);background:var(--lime-soft)}
+@media(max-width:640px){
+  .app-nav a{padding:8px 9px;font-size:13px}
+}
+/* friendly empty states */
+.empty-state{text-align:center;padding:34px 18px;border:1px dashed var(--border);border-radius:14px;margin:14px 0;color:var(--muted)}
+.empty-state .emoji{font-size:34px;margin-bottom:8px}
+.empty-state h4{color:var(--text);margin-bottom:6px;font-size:16px}
+.empty-state p{font-size:14px;margin-bottom:14px;max-width:340px;margin-left:auto;margin-right:auto}
 @media(max-width:640px){
   .hero{padding:44px 0 28px}
   .site-header .wrap{padding:10px 14px}
   .btn{padding:10px 16px}
+  #userChip{display:none}
 }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get set up — Menstars</title>
+<meta name="description" content="A quick 3-step setup for your Menstars account: claim your handles, pick your niche, add your first engager.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/app"><span class="logo-mark">M</span><span>Menstars <small>My Engager Network (MEN)</small></span></a>
+  </div>
+</header>
+<main class="wrap">
+  <div class="form-card ob-card">
+    <div class="ob-progress">
+      <span id="obStepLabel">Step 1 of 3</span>
+      <div class="ob-dots" id="obDots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+    <div class="form-err" id="obErr"></div>
+
+    <!-- STEP 1: handles -->
+    <section id="obStep1">
+      <h2>Claim your handles 👋</h2>
+      <p class="sub">Tell us who you are on each platform. When someone adds you as an engager, they'll land on your Menstars profile first — showing your links and your stars.</p>
+      <div class="field"><label for="obTiktok">TikTok username</label><input class="input" id="obTiktok" placeholder="@yourname" autocomplete="off" maxlength="60"></div>
+      <div class="field"><label for="obInstagram">Instagram username</label><input class="input" id="obInstagram" placeholder="@yourname" autocomplete="off" maxlength="60"></div>
+      <div class="field"><label for="obYoutube">YouTube handle</label><input class="input" id="obYoutube" placeholder="@yourname" autocomplete="off" maxlength="60"></div>
+      <div class="field"><label for="obFacebook">Facebook username</label><input class="input" id="obFacebook" placeholder="yourname" autocomplete="off" maxlength="60"></div>
+    </section>
+
+    <!-- STEP 2: niche -->
+    <section id="obStep2" hidden>
+      <h2>Pick your niche 🎯</h2>
+      <p class="sub">What kind of content do you and your people make? This helps brands find the right engagers later. One niche for now — you can change it anytime in My Profile.</p>
+      <div class="field">
+        <label for="obNiche">My niche</label>
+        <select class="input" id="obNiche">
+          <option value="">Choose one…</option>
+          <option>Beauty</option><option>Food</option><option>Comedy</option><option>Fitness</option>
+          <option>Fashion</option><option>Music</option><option>Dance</option><option>Gaming</option>
+          <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
+          <option>Travel</option><option>Tech</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="obNicheOtherWrap" style="display:none">
+        <label for="obNicheOther">Tell us your niche</label>
+        <input class="input" id="obNicheOther" maxlength="40" placeholder="e.g. Gardening, Real estate…">
+      </div>
+    </section>
+
+    <!-- STEP 3: first engager -->
+    <section id="obStep3" hidden>
+      <h2>Add your first engager ⭐</h2>
+      <p class="sub">Think of someone who always shows up for you — liking, commenting, sharing. Add their username and they're on your list. Give them a star from your dashboard whenever they impress you.</p>
+      <div class="field">
+        <label>Platform</label>
+        <div class="tabs" id="obPlatformTabs"></div>
+      </div>
+      <div class="field">
+        <label for="obEngager">Username</label>
+        <div class="add-row">
+          <input class="input" id="obEngager" placeholder="@username" autocomplete="off" maxlength="60">
+          <button class="btn" id="obTrackBtn" type="button">＋ Track</button>
+        </div>
+      </div>
+      <div id="obAdded" class="notice" style="display:none"></div>
+    </section>
+
+    <div class="ob-actions">
+      <button class="btn block" id="obContinue">Continue →</button>
+      <button class="btn ghost block" id="obSkip" type="button">Skip this step</button>
+    </div>
+    <p class="ob-skipall"><a href="/app" id="obSkipAll">Skip all → take me to my dashboard</a></p>
+  </div>
+</main>
+<script src="/js/onboarding.js"></script>
+</body>
+</html>

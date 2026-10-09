@@ -20,6 +20,7 @@
           <div class="avatar">${esc(d.handle.charAt(0).toUpperCase())}</div>
           <h1>@${esc(d.handle)}</h1>
           <p style="color:var(--muted)">${esc(d.displayName)} · ${esc(d.platformLabel || platform)}</p>
+          ${d.niche ? `<p style="margin-top:8px">🎯 <b>Niche:</b> ${esc(d.niche)}</p>` : ""}
           ${d.topBrand ? `<p style="margin-top:8px"><span class="slogan"><b>Promotes:</b> ${esc(d.topBrand)}</span></p>` : ""}
           <div class="stars-big">★ ${d.totalStars} star${d.totalStars === 1 ? "" : "s"} earned</div>
           <p style="color:var(--faint);font-size:13px;margin-top:6px">Contributor since ${new Date(d.memberSince).toLocaleDateString()}</p>

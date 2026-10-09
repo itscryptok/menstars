@@ -23,6 +23,26 @@ const PLATFORMS = {
 };
 const PLATFORM_KEYS = Object.keys(PLATFORMS);
 
+// Contributor niches (v1: one per contributor). "Other" takes free text.
+const NICHES = [
+  "Beauty", "Food", "Comedy", "Fitness", "Fashion", "Music", "Dance",
+  "Gaming", "Education", "Business", "Lifestyle", "Sports", "Travel", "Tech", "Other",
+];
+
+// Normalize a (dropdown, otherText) pair into a single stored value.
+// Returns null when blank. "Other" + custom text stores the custom text.
+function normalizeNiche(niche, otherText) {
+  const n = String(niche || "").trim();
+  if (!n) return null;
+  if (n === "Other") {
+    const t = String(otherText || "").trim().slice(0, 40);
+    return t || "Other";
+  }
+  if (NICHES.includes(n)) return n;
+  // Tolerate a raw custom value (e.g. saved as free text before).
+  return n.slice(0, 40) || null;
+}
+
 function cleanHandle(raw) {
   if (typeof raw !== "string") return null;
   let h = raw.trim().replace(/^@+/, "");
@@ -89,6 +109,7 @@ function publicUser(u) {
     email: u.email,
     displayName: u.displayName,
     topBrand: u.topBrand || null,
+    niche: u.niche || null,
     suspended: !!u.suspended,
     createdAt: u.createdAt,
   };
@@ -109,8 +130,6 @@ app.post("/api/auth/signup", async (req, res) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
-    const displayName = String(req.body.displayName || "").trim().slice(0, 60) || null;
-    const topBrand = String(req.body.topBrand || "").trim().slice(0, 80) || null;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return res.status(400).json({ error: "Enter a valid email address." });
     if (password.length < 8)
@@ -118,7 +137,9 @@ app.post("/api/auth/signup", async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: "That email is already registered. Try logging in." });
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { email, passwordHash, displayName, topBrand } });
+    // Frictionless signup: email + password only. Everything else is set
+    // later via the onboarding walkthrough or the profile page.
+    const user = await prisma.user.create({ data: { email, passwordHash } });
     const token = crypto.randomBytes(32).toString("hex");
     await prisma.session.create({
       data: { token, userId: user.id, expiresAt: new Date(Date.now() + SESSION_DAYS * 864e5) },
@@ -175,7 +196,7 @@ app.get("/api/auth/me", async (req, res) => {
   res.json({ user: publicUser(req.user), handles: await getHandlesMap(req.user.id) });
 });
 
-// Update own profile: display name + top brand (both optional).
+// Update own profile: display name + top brand + niche (all optional).
 app.put("/api/account", requireAuth, async (req, res) => {
   try {
     const data = {};
@@ -183,6 +204,8 @@ app.put("/api/account", requireAuth, async (req, res) => {
       data.displayName = String(req.body.displayName || "").trim().slice(0, 60) || null;
     if (req.body.topBrand !== undefined)
       data.topBrand = String(req.body.topBrand || "").trim().slice(0, 80) || null;
+    if (req.body.niche !== undefined)
+      data.niche = normalizeNiche(req.body.niche, req.body.nicheOther);
     const user = await prisma.user.update({ where: { id: req.user.id }, data });
     res.json({ user: publicUser(user) });
   } catch (e) {
@@ -431,6 +454,7 @@ app.get("/api/profile/:platform/:handle", async (req, res) => {
       platform,
       platformLabel: PLATFORMS[platform].label,
       topBrand: claimed.user.topBrand || null,
+      niche: claimed.user.niche || null,
       totalStars: agg._sum.stars || 0,
       memberSince: claimed.user.createdAt,
       links: claimed.user.handles.map((h) => ({
@@ -497,7 +521,10 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
 // ---------- aggregated platform-wide leaderboard ----------
 // Unique engager = platform + lowercased handle. Ranked by TOTAL stars from
 // every contributor combined. Public (advertiser/buyer-facing).
-async function aggregatedTop(platform, limit = 7) {
+// niches: derived from the niches of contributors who starred each handle
+// (an engager can carry multiple niches). Optional nicheFilter keeps only
+// engagers known to engage with that niche.
+async function aggregatedTop(platform, limit = 7, nicheFilter = null) {
   const rows = await prisma.$queryRawUnsafe(
     `SELECT platform, MIN(username) AS display, LOWER(username) AS h,
             SUM(stars)::int AS total_stars, COUNT(DISTINCT "userId")::int AS contributors
@@ -517,12 +544,27 @@ async function aggregatedTop(platform, limit = 7) {
       where: { platform, handle: { equals: r.h, mode: "insensitive" } },
       include: { user: { select: { topBrand: true } } },
     });
+    const nicheRows = await prisma.$queryRawUnsafe(
+      `SELECT DISTINCT u.niche AS niche FROM "Engager" e
+       JOIN "User" u ON u.id = e."userId"
+       WHERE e.platform = $1 AND LOWER(e.username) = $2
+         AND e.stars > 0 AND u.niche IS NOT NULL AND u.niche <> ''`,
+      platform,
+      r.h
+    );
+    const niches = nicheRows.map((x) => x.niche);
+    if (
+      nicheFilter &&
+      !niches.some((n) => n.toLowerCase() === String(nicheFilter).toLowerCase())
+    )
+      continue;
     out.push({
       rank,
       handle: r.display,
       platform,
       totalStars: r.total_stars,
       contributors: r.contributors,
+      niches,
       topBrand: (reg && reg.user.topBrand) || null,
       link: reg
         ? { kind: "internal", url: `/profile/${platform}/${encodeURIComponent(reg.handle)}` }
@@ -635,7 +677,7 @@ app.get("/api/addy/overview", requireAdmin, async (req, res) => {
     const now = new Date();
     const d7 = new Date(now.getTime() - 7 * 864e5);
     const d30 = new Date(now.getTime() - 30 * 864e5);
-    const [totalUsers, signups7, signups30, totalEngagers, starsAgg, perPlatform, perPlatformUsers] =
+    const [totalUsers, signups7, signups30, totalEngagers, starsAgg, perPlatform, perPlatformUsers, perNiche] =
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { createdAt: { gte: d7 } } }),
@@ -644,10 +686,15 @@ app.get("/api/addy/overview", requireAdmin, async (req, res) => {
         prisma.engager.aggregate({ _sum: { stars: true } }),
         prisma.engager.groupBy({ by: ["platform"], _count: { _all: true }, _sum: { stars: true } }),
         prisma.claimedHandle.groupBy({ by: ["platform"], _count: { _all: true } }),
+        prisma.user.groupBy({ by: ["niche"], _count: { _all: true }, where: { niche: { not: null } } }),
       ]);
     res.json({
       totalUsers, signups7, signups30, totalEngagers,
       totalStars: starsAgg._sum.stars || 0,
+      perNiche: perNiche
+        .filter((n) => n.niche)
+        .map((n) => ({ niche: n.niche, contributors: n._count._all }))
+        .sort((a, b) => b.contributors - a.contributors),
       perPlatform: perPlatform.map((p) => ({
         platform: p.platform,
         engagers: p._count._all,
@@ -665,17 +712,19 @@ app.get("/api/addy/overview", requireAdmin, async (req, res) => {
 app.get("/api/addy/users", requireAdmin, async (req, res) => {
   try {
     const q = String(req.query.q || "").trim();
+    const niche = String(req.query.niche || "").trim();
     const take = Math.min(parseInt(req.query.take || "25", 10) || 25, 100);
     const skip = parseInt(req.query.skip || "0", 10) || 0;
     const where = q
       ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { displayName: { contains: q, mode: "insensitive" } }] }
       : {};
+    if (niche) where.niche = { equals: niche, mode: "insensitive" };
     const [total, users] = await Promise.all([
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
         select: {
-          id: true, email: true, displayName: true, topBrand: true, suspended: true, createdAt: true,
+          id: true, email: true, displayName: true, topBrand: true, niche: true, suspended: true, createdAt: true,
           handles: { select: { platform: true, handle: true } },
           _count: { select: { engagers: true, notes: true } },
         },
@@ -744,7 +793,8 @@ app.get("/api/addy/leaderboard", requireAdmin, async (req, res) => {
   try {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
-    res.json({ platform, top: await aggregatedTop(platform, 50) });
+    const niche = String(req.query.niche || "").trim() || null;
+    res.json({ platform, top: await aggregatedTop(platform, 50, niche) });
   } catch (e) {
     console.error("addy leaderboard error:", e.message);
     res.status(500).json({ error: "Something went wrong." });
@@ -755,11 +805,12 @@ app.get("/api/addy/leaderboard.csv", requireAdmin, async (req, res) => {
   try {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
-    const top = await aggregatedTop(platform, 100);
+    const niche = String(req.query.niche || "").trim() || null;
+    const top = await aggregatedTop(platform, 100, niche);
     const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = ["rank,handle,platform,total_stars,contributors,promotes_brand,profile_url"];
+    const lines = ["rank,handle,platform,total_stars,contributors,niches,promotes_brand,profile_url"];
     for (const t of top) {
-      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc(t.topBrand || ""), esc(t.link.url)].join(","));
+      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc((t.niches || []).join("; ")), esc(t.topBrand || ""), esc(t.link.url)].join(","));
     }
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="menstars-top-engagers-${platform}.csv"`);
@@ -828,6 +879,9 @@ app.get("/profile/:platform/:handle", (req, res) =>
 );
 app.get("/top-engagers", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "top-engagers.html"))
+);
+app.get("/onboarding", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "onboarding.html"))
 );
 app.get("/addy", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "addy.html"))

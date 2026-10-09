@@ -55,12 +55,21 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
       <div class="stat-grid" id="ovStats"></div>
       <h3 style="margin-top:8px">Per platform</h3>
       <div id="ovPlatforms"></div>
+      <h3 style="margin-top:8px">Per niche</h3>
+      <div id="ovNiches"></div>
     </section>
 
     <section id="ap-users" hidden>
       <h2>Contributors</h2>
       <div class="toolbar">
         <input class="input" id="userSearch" placeholder="Search email or name…">
+        <select class="input" id="userNiche">
+          <option value="">All niches</option>
+          <option>Beauty</option><option>Food</option><option>Comedy</option><option>Fitness</option>
+          <option>Fashion</option><option>Music</option><option>Dance</option><option>Gaming</option>
+          <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
+          <option>Travel</option><option>Tech</option><option>Other</option>
+        </select>
         <button class="btn small" id="userSearchBtn">Search</button>
       </div>
       <div id="usersTable"></div>
@@ -70,6 +79,16 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
       <h2>Engagers leaderboard</h2>
       <p style="color:var(--muted);font-size:14px">Aggregated across all contributors — unique engager = platform + handle. Advertiser/buyer-ready.</p>
       <div class="addy-tabs" id="boardTabs"></div>
+      <div class="toolbar" style="margin-top:10px">
+        <select class="input" id="boardNiche">
+          <option value="">All niches</option>
+          <option>Beauty</option><option>Food</option><option>Comedy</option><option>Fitness</option>
+          <option>Fashion</option><option>Music</option><option>Dance</option><option>Gaming</option>
+          <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
+          <option>Travel</option><option>Tech</option><option>Other</option>
+        </select>
+        <button class="btn small" id="boardNicheBtn">Filter</button>
+      </div>
       <div id="boardTable"></div>
       <h3 style="margin-top:18px">📥 Advertiser exports (Top 100 CSV per platform)</h3>
       <div class="addy-tabs" id="csvBtns"></div>
