@@ -91,6 +91,7 @@
       box.appendChild(b);
     }
     $("addTitle").textContent = "Track on " + PLATFORMS[platform];
+    $("addSub").textContent = "Add the profile name of your top engagers — the people who engage with you and your content the most — from " + PLATFORMS[platform] + ".";
     $("handleInput").placeholder = "Enter a " + PLATFORMS[platform] + " username to track…";
     $("top7sub").textContent = "Your highest-starred engagers on " + PLATFORMS[platform] + ".";
   }
