@@ -107,6 +107,40 @@ app.get("/api/boot-status", (req, res) => {
   res.json(global.__menBoot || { steps: [], dbOk: false, note: "boot did not run" });
 });
 
+// Temporary DB diagnostic: raw pg vs Prisma client, each with a hard timeout.
+app.get("/api/db-ping", async (req, res) => {
+  const out = {};
+  const race = (p, ms) =>
+    Promise.race([
+      p.then(
+        (v) => ({ ok: true, v }),
+        (e) => ({ ok: false, error: String(e.message || e).replace(/:\/\/[^:\s/]+:[^@\s/]+@/g, "://***@").slice(0, 300) })
+      ),
+      new Promise((resolve) => setTimeout(() => resolve({ ok: false, error: "TIMEOUT after " + ms + "ms" }), ms)),
+    ]);
+  try {
+    const { Client } = require("pg");
+    const c = new Client({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+    });
+    out.pg_connect = await race(c.connect(), 12000);
+    if (out.pg_connect.ok) {
+      out.pg_query = await race(c.query("SELECT 1 AS one"), 12000);
+      await c.end().catch(() => {});
+    }
+  } catch (e) {
+    out.pg_fatal = String(e.message).slice(0, 200);
+  }
+  try {
+    out.prisma_query = await race(prisma.$queryRawUnsafe("SELECT 1 AS one"), 15000);
+  } catch (e) {
+    out.prisma_fatal = String(e.message).slice(0, 200);
+  }
+  res.json(out);
+});
+
 // ---------- auth ----------
 app.post("/api/auth/signup", async (req, res) => {
   try {
