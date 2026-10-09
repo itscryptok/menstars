@@ -171,6 +171,7 @@
           <div class="eng-actions">
             <span class="star-count">★ ${e.stars}</span>
             <button class="star-btn" data-act="star">★ Star</button>
+            <button class="star-btn unstar" data-act="unstar" title="Remove one star">☆ −1</button>
           </div>
         </div>
         <div class="eng-notes">
@@ -195,6 +196,9 @@
     try {
       if (act === "star") {
         const d = await api("/api/engagers/" + id + "/star", { method: "POST" });
+        card.querySelector(".star-count").textContent = "★ " + d.stars;
+      } else if (act === "unstar") {
+        const d = await api("/api/engagers/" + id + "/unstar", { method: "POST" });
         card.querySelector(".star-count").textContent = "★ " + d.stars;
       } else if (act === "savenotes") {
         const notes = card.querySelector('[data-act="notes"]').value;

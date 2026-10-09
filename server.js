@@ -385,6 +385,23 @@ app.post("/api/engagers/:id/star", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/api/engagers/:id/unstar", requireAuth, async (req, res) => {
+  try {
+    const r = await prisma.engager.findFirst({
+      where: { id: req.params.id, userId: req.user.id },
+    });
+    if (!r) return res.status(404).json({ error: "Engager not found." });
+    const updated = await prisma.engager.update({
+      where: { id: r.id },
+      data: { stars: Math.max(0, r.stars - 1) },
+    });
+    res.json({ ok: true, stars: updated.stars });
+  } catch (e) {
+    console.error("unstar error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
 app.delete("/api/engagers/:id", requireAuth, async (req, res) => {
   try {
     const r = await prisma.engager.findFirst({
