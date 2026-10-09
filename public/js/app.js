@@ -93,7 +93,6 @@
     $("addTitle").textContent = "Track on " + PLATFORMS[platform];
     $("addSub").textContent = "Add the profile name of your top engagers — the people who engage with you and your content the most — from " + PLATFORMS[platform] + ".";
     $("handleInput").placeholder = "Enter a " + PLATFORMS[platform] + " username to track…";
-    $("top7sub").textContent = "Your highest-starred engagers on " + PLATFORMS[platform] + ".";
   }
 
   // ---------- empty-state CTAs (delegated) ----------
@@ -148,23 +147,6 @@
     };
   }
 
-  // ---------- top 7 ----------
-  async function loadTop7() {
-    const d = await api("/api/top7?platform=" + platform);
-    const ol = $("top7list");
-    if (!d.top.length) {
-      ol.innerHTML = `<div class="empty-state"><div class="emoji">🌟</div><h4>No starred engagers yet</h4>
-        <p>Your top supporters on ${esc(PLATFORMS[platform])} will show up here once you give them stars.</p>
-        <button class="btn" data-focus="handleInput">Track your first engager</button></div>`;
-      return;
-    }
-    ol.innerHTML = d.top.map((e) => {
-      const target = e.link.kind === "external" ? ' target="_blank" rel="noopener"' : "";
-      const badge = e.link.kind === "internal" ? '<span class="reg-badge">contributor</span>' : "";
-      return `<li><span class="rank">${e.rank}</span><span class="who"><a href="${esc(e.link.url)}"${target}>@${esc(e.username)}</a>${badge}</span><span class="stars">★ ${e.stars}</span></li>`;
-    }).join("");
-  }
-
   // ---------- engagers ----------
   async function loadEngagers() {
     const q = $("searchInput").value.trim();
@@ -214,7 +196,6 @@
       if (act === "star") {
         const d = await api("/api/engagers/" + id + "/star", { method: "POST" });
         card.querySelector(".star-count").textContent = "★ " + d.stars;
-        loadTop7();
       } else if (act === "savenotes") {
         const notes = card.querySelector('[data-act="notes"]').value;
         await api("/api/engagers/" + id, { method: "PATCH", body: JSON.stringify({ notes }) });
@@ -362,7 +343,7 @@
   }
 
   async function refreshAll() {
-    await Promise.all([loadTop7(), loadEngagers(), loadAddedMe()]);
+    await Promise.all([loadEngagers(), loadAddedMe()]);
   }
 
   boot();
