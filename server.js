@@ -19,6 +19,7 @@ const PLATFORMS = {
   tiktok: { label: "TikTok", profileUrl: (h) => `https://www.tiktok.com/@${h}` },
   instagram: { label: "Instagram", profileUrl: (h) => `https://www.instagram.com/${h}` },
   youtube: { label: "YouTube", profileUrl: (h) => `https://www.youtube.com/@${h}` },
+  x: { label: "X.com", profileUrl: (h) => `https://x.com/${h}` },
   facebook: { label: "Facebook", profileUrl: (h) => `https://www.facebook.com/${h}` },
 };
 const PLATFORM_KEYS = Object.keys(PLATFORMS);

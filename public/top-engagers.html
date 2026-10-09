@@ -27,6 +27,11 @@
     <a class="btn small" href="/login?mode=signup">Get started</a>
   </div>
 </header>
+
+<div class="engager-banner" id="engagerBanner" hidden>
+  <p>👋 Hello content engagers — let your favorite creators know they can help you rank high on this platform, so brand deals can find you too.</p>
+  <button class="engager-banner-x" id="engagerBannerX" aria-label="Dismiss">✕</button>
+</div>
 <main class="wrap">
   <section class="hero" style="padding:44px 0 18px">
     <span class="kicker"><span class="rule"></span>Menstars · Community leaderboard</span>
@@ -57,5 +62,18 @@
 </main>
 <footer><div class="wrap"><p>Menstars — My Engager Network (MEN). It&rsquo;s a MEN&rsquo;s world. Star my Engagers.</p></div></footer>
 <script src="/js/top-engagers.js"></script>
+<script>
+(function(){
+  var b=document.getElementById('engagerBanner');
+  var x=document.getElementById('engagerBannerX');
+  if(!b) return;
+  try{ if(localStorage.getItem('menstars_engager_banner')==='off') return; }catch(e){}
+  b.hidden=false;
+  if(x) x.addEventListener('click',function(){
+    b.hidden=true;
+    try{ localStorage.setItem('menstars_engager_banner','off'); }catch(e){}
+  });
+})();
+</script>
 </body>
 </html>

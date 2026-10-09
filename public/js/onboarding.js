@@ -1,6 +1,6 @@
 // Menstars onboarding: 3 friendly skippable steps after signup.
 (function () {
-  const PLATFORMS = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube", facebook: "Facebook" };
+  const PLATFORMS = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube", x: "X.com", facebook: "Facebook" };
   const $ = (id) => document.getElementById(id);
   const err = $("obErr");
   let step = 1;
@@ -75,7 +75,7 @@
   async function saveStep() {
     if (step === 1) {
       const handles = {};
-      const map = { tiktok: "obTiktok", instagram: "obInstagram", youtube: "obYoutube", facebook: "obFacebook" };
+      const map = { tiktok: "obTiktok", instagram: "obInstagram", youtube: "obYoutube", x: "obX", facebook: "obFacebook" };
       for (const [p, id] of Object.entries(map)) {
         const v = $(id).value.trim();
         if (v) handles[p] = v;

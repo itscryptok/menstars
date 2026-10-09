@@ -3,6 +3,7 @@
     tiktok: "TikTok",
     instagram: "Instagram",
     youtube: "YouTube",
+    x: "X.com",
     facebook: "Facebook",
   };
   let platform = "tiktok";

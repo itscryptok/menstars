@@ -200,3 +200,7 @@ main.with-nav{padding-bottom:86px}
 .read-more::after{content:" »"}
 #readLessLink.read-more::after{content:" «"}
 .reward-more{scroll-margin-top:20px}
+.engager-banner{display:flex;align-items:center;justify-content:center;gap:12px;background:var(--lime-soft);border-bottom:1px solid var(--lime-dark);padding:10px 16px;text-align:center}
+.engager-banner p{margin:0;font-size:14.5px;color:var(--ink)}
+.engager-banner-x{background:none;border:none;color:var(--ink);font-size:14px;cursor:pointer;opacity:.6;padding:4px 8px;flex-shrink:0}
+.engager-banner-x:hover{opacity:1}
