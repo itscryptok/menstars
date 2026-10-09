@@ -75,6 +75,9 @@ img.logo-mark{object-fit:cover;display:block;padding:0}
 .checks li{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:16px}
 .checks li::before{content:"✓ ";color:var(--lime);font-weight:800}
 footer{border-top:1px solid var(--border);margin-top:40px;padding:26px 0;color:var(--faint);font-size:13.5px;text-align:center}
+.foot-nav{margin-bottom:10px;font-size:14px}
+.foot-nav a{color:var(--muted);margin:0 8px;white-space:nowrap}
+.foot-nav a:hover{color:var(--lime)}
 /* forms */
 .field{margin-bottom:14px}
 .field label{display:block;font-size:13.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
