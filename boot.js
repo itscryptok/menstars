@@ -30,17 +30,28 @@ async function step(name, fn) {
       const admin = new Client({
         connectionString: adminUrl,
         ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 20000,
+        query_timeout: 30000,
       });
-      await admin.connect();
+      const withTimeout = (p, ms, what) =>
+        Promise.race([
+          p,
+          new Promise((_, rej) =>
+            setTimeout(() => rej(new Error(what + " timed out")), ms)
+          ),
+        ]);
+      await withTimeout(admin.connect(), 25000, "pg connect");
       try {
-        const r = await admin.query(
-          "SELECT 1 FROM pg_database WHERE datname = 'men_db'"
+        const r = await withTimeout(
+          admin.query("SELECT 1 FROM pg_database WHERE datname = 'men_db'"),
+          30000,
+          "db check"
         );
         if (r.rowCount === 0) {
-          await admin.query("CREATE DATABASE men_db");
+          await withTimeout(admin.query("CREATE DATABASE men_db"), 60000, "create db");
         }
       } finally {
-        await admin.end();
+        await admin.end().catch(() => {});
       }
     });
   } else {
