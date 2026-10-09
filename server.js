@@ -558,7 +558,7 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
 // niches: derived from the niches of contributors who starred each handle
 // (an engager can carry multiple niches). Optional nicheFilter ranks only
 // stars given by contributors carrying that niche.
-async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDealsOnly = false) {
+async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDealsOnly = false, handleQuery = null) {
   // When a niche filter is set, only stars from contributors carrying that
   // niche count toward the ranking — the honest "top 7 for Food".
   const params = [platform, limit];
@@ -567,11 +567,18 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
     nicheJoin = 'JOIN "User" u ON u.id = e."userId" AND $3 = ANY(u.niches)';
     params.push(nicheFilter);
   }
+  let handleWhere = "";
+  if (handleQuery) {
+    // Escape LIKE wildcards so the query is a literal substring match.
+    const like = "%" + handleQuery.replace(/[\\%_]/g, (c) => "\\" + c).toLowerCase() + "%";
+    params.push(like);
+    handleWhere = ` AND LOWER(e.username) LIKE $${params.length} ESCAPE '\\'`;
+  }
   const rows = await prisma.$queryRawUnsafe(
     `SELECT e.platform, MIN(e.username) AS display, LOWER(e.username) AS h,
             SUM(e.stars)::int AS total_stars, COUNT(DISTINCT e."userId")::int AS contributors
      FROM "Engager" e ${nicheJoin}
-     WHERE e.platform = $1 AND e.stars > 0
+     WHERE e.platform = $1 AND e.stars > 0${handleWhere}
      GROUP BY e.platform, LOWER(e.username)
      HAVING SUM(e.stars) > 0
      ORDER BY total_stars DESC, contributors DESC
@@ -631,7 +638,8 @@ app.get("/api/top-engagers", async (req, res) => {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
     const niche = String(req.query.niche || "").trim() || null;
-    res.json({ platform, niche, top: await aggregatedTop(platform, 7, niche) });
+    const q = String(req.query.q || "").trim().slice(0, 40) || null;
+    res.json({ platform, niche, q, top: await aggregatedTop(platform, 7, niche, false, q) });
   } catch (e) {
     console.error("top-engagers error:", e.message);
     res.status(500).json({ error: "Something went wrong. Try again." });

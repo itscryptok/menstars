@@ -2,6 +2,8 @@
   const PLATFORMS = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube", x: "X.com", facebook: "Facebook" };
   let platform = "tiktok";
   let niche = "";
+  let query = "";
+  let searchTimer = null;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -21,11 +23,15 @@
 
   function updateTitle() {
     const t = $("boardTitle");
-    if (t) t.textContent = "🏆 Top 7 — " + PLATFORMS[platform] + (niche ? " · " + niche : "");
+    if (t) t.textContent = query
+      ? `🔍 Top 7 results for "${query}" — ${PLATFORMS[platform]}`
+      : "🏆 Top 7 — " + PLATFORMS[platform] + (niche ? " · " + niche : "");
     const sub = $("boardSub");
-    if (sub) sub.textContent = niche
-      ? "Ranked by stars from " + niche + " contributors only."
-      : "The most-starred engagers across the whole Menstars community — ranked by total stars from every contributor combined.";
+    if (sub) sub.textContent = query
+      ? "The 7 most-starred matching engagers across the Menstars community."
+      : niche
+        ? "Ranked by stars from " + niche + " contributors only."
+        : "The most-starred engagers across the whole Menstars community — ranked by total stars from every contributor combined.";
   }
 
   async function loadNiches() {
@@ -45,10 +51,12 @@
     if (!ol) return;
     ol.innerHTML = '<div class="empty">Loading…</div>';
     try {
-      const r = await fetch("/api/top-engagers?platform=" + platform + (niche ? "&niche=" + encodeURIComponent(niche) : ""));
+      const r = await fetch("/api/top-engagers?platform=" + platform + (niche ? "&niche=" + encodeURIComponent(niche) : "") + (query ? "&q=" + encodeURIComponent(query) : ""));
       const d = await r.json();
       if (!d.top.length) {
-        ol.innerHTML = '<div class="empty">No starred engagers yet' + (niche ? " for " + esc(niche) : "") + " on " + esc(PLATFORMS[platform]) + '. <a href="/login?mode=signup">Be the first to star someone. ★</a></div>';
+        ol.innerHTML = '<div class="empty">' + (query
+          ? 'No engagers matching "' + esc(query) + '" on ' + esc(PLATFORMS[platform]) + "."
+          : "No starred engagers yet" + (niche ? " for " + esc(niche) : "") + " on " + esc(PLATFORMS[platform]) + '. <a href="/login?mode=signup">Be the first to star someone. ★</a>') + "</div>";
         return;
       }
       ol.innerHTML = d.top.map((e) => {
@@ -67,5 +75,16 @@
 
   renderTabs();
   loadNiches();
+  const searchInput = $("engagerSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        query = searchInput.value.trim();
+        updateTitle();
+        load();
+      }, 300);
+    });
+  }
   load();
 })();
