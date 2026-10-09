@@ -48,16 +48,16 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
   <!-- FIRST-RUN SETUP -->
   <div id="addySetup" class="form-card" style="display:none">
     <h2>Set admin password</h2>
-    <p class="sub">This is the first run — choose the password for this admin area (min. 10 characters). Password only, no username.</p>
+    <p class="sub">This is the first run — choose the password for this admin area. Password only, no username.</p>
     <div class="form-err" id="setupErr"></div>
     <form id="setupForm">
       <div class="field">
         <label for="setupPass">New password</label>
-        <input class="input" id="setupPass" type="password" autocomplete="new-password" required minlength="10">
+        <input class="input" id="setupPass" type="password" autocomplete="new-password" required>
       </div>
       <div class="field">
         <label for="setupPass2">Confirm password</label>
-        <input class="input" id="setupPass2" type="password" autocomplete="new-password" required minlength="10">
+        <input class="input" id="setupPass2" type="password" autocomplete="new-password" required>
       </div>
       <button class="btn block" type="submit">Set password</button>
     </form>
@@ -154,8 +154,8 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
             <input class="input" id="pwCur" type="password" autocomplete="current-password" required>
           </div>
           <div class="field">
-            <label for="pwNew">New password (min. 10 characters)</label>
-            <input class="input" id="pwNew" type="password" autocomplete="new-password" required minlength="10">
+            <label for="pwNew">New password</label>
+            <input class="input" id="pwNew" type="password" autocomplete="new-password" required>
           </div>
           <button class="btn small" type="submit">Change password</button>
         </form>

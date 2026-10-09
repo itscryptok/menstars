@@ -709,7 +709,7 @@ app.post("/api/addy/setup", async (req, res) => {
     const existing = await prisma.adminSetting.findUnique({ where: { key: "admin_password_hash" } }).catch(() => null);
     if (existing) return res.status(403).json({ error: "Admin password is already set." });
     const password = String(req.body.password || "");
-    if (password.length < 10) return res.status(400).json({ error: "Password must be at least 10 characters." });
+    if (!password.length) return res.status(400).json({ error: "Password cannot be empty." });
     const hash = await bcrypt.hash(password, 12);
     await prisma.adminSetting.upsert({
       where: { key: "admin_password_hash" },
@@ -730,7 +730,7 @@ app.post("/api/addy/change-password", requireAdmin, async (req, res) => {
     const hash = await getAdminHash();
     if (!hash || !(await bcrypt.compare(cur, hash)))
       return res.status(401).json({ error: "Current password is wrong." });
-    if (next.length < 10) return res.status(400).json({ error: "New password must be at least 10 characters." });
+    if (!next.length) return res.status(400).json({ error: "New password cannot be empty." });
     const nh = await bcrypt.hash(next, 12);
     await prisma.adminSetting.upsert({
       where: { key: "admin_password_hash" },
