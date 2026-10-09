@@ -349,7 +349,7 @@ app.get("/api/top7", requireAuth, async (req, res) => {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
     const rows = await prisma.engager.findMany({
-      where: { userId: req.user.id, platform },
+      where: { userId: req.user.id, platform, stars: { gt: 0 } },
       orderBy: [{ stars: "desc" }, { createdAt: "desc" }],
       take: 7,
     });
@@ -503,6 +503,7 @@ async function aggregatedTop(platform, limit = 7) {
             SUM(stars)::int AS total_stars, COUNT(DISTINCT "userId")::int AS contributors
      FROM "Engager" WHERE platform = $1
      GROUP BY platform, LOWER(username)
+     HAVING SUM(stars) > 0
      ORDER BY total_stars DESC, contributors DESC
      LIMIT $2`,
     platform,

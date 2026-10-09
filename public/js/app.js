@@ -81,8 +81,8 @@
       b.onclick = () => { platform = key; renderTabs(); refreshAll(); };
       box.appendChild(b);
     }
-    $("addTitle").textContent = "Add a " + PLATFORMS[platform] + " engager";
-    $("handleInput").placeholder = "Enter a " + PLATFORMS[platform] + " username…";
+    $("addTitle").textContent = "Track on " + PLATFORMS[platform];
+    $("handleInput").placeholder = "Enter a " + PLATFORMS[platform] + " username to track…";
     $("top7sub").textContent = "Your highest-starred engagers on " + PLATFORMS[platform] + ".";
   }
 
@@ -122,7 +122,7 @@
     }
     ol.innerHTML = d.top.map((e) => {
       const target = e.link.kind === "external" ? ' target="_blank" rel="noopener"' : "";
-      const badge = e.link.kind === "internal" ? '<span class="reg-badge">MEN member</span>' : "";
+      const badge = e.link.kind === "internal" ? '<span class="reg-badge">contributor</span>' : "";
       return `<li><span class="rank">${e.rank}</span><span class="who"><a href="${esc(e.link.url)}"${target}>@${esc(e.username)}</a>${badge}</span><span class="stars">★ ${e.stars}</span></li>`;
     }).join("");
   }
@@ -135,12 +135,12 @@
     const box = $("engagerList");
     $("acctCount").textContent = d.engagers.length + " on " + PLATFORMS[platform];
     if (!d.engagers.length) {
-      box.innerHTML = '<div class="empty">Nothing here yet. Your ' + esc(PLATFORMS[platform]) + ' engager list starts with the field above. ↑</div>';
+      box.innerHTML = '<div class="empty">Nobody tracked yet. Your ' + esc(PLATFORMS[platform]) + ' list starts with the field above. ↑</div>';
       return;
     }
     box.innerHTML = d.engagers.map((e) => {
       const target = e.link.kind === "external" ? ' target="_blank" rel="noopener"' : "";
-      const badge = e.link.kind === "internal" ? '<span class="reg-badge">MEN member</span>' : "";
+      const badge = e.link.kind === "internal" ? '<span class="reg-badge">contributor</span>' : "";
       return `<div class="eng" data-id="${esc(e.id)}">
         <div class="eng-top">
           <div class="avatar">${esc(e.username.charAt(0).toUpperCase())}</div>
@@ -219,7 +219,7 @@
     const d = await api("/api/added-me?platform=" + platform);
     const ul = $("addedMeList");
     if (!d.claimed) {
-      $("addedMeSub").textContent = "Claim your " + PLATFORMS[platform] + " handle in My Profile so members can find you here.";
+      $("addedMeSub").textContent = "Claim your " + PLATFORMS[platform] + " handle in My Profile so contributors can find you here.";
       ul.innerHTML = "";
       return;
     }
@@ -232,7 +232,7 @@
       const who = e.profileUrl
         ? `<a href="${esc(e.profileUrl)}">@${esc(e.handle)}</a>`
         : esc(e.name);
-      return `<li><strong>${who}</strong> added you to their engagers list <span style="color:var(--faint)">· ${new Date(e.at).toLocaleDateString()}</span></li>`;
+      return `<li><strong>${who}</strong> added you to their list <span style="color:var(--faint)">· ${new Date(e.at).toLocaleDateString()}</span></li>`;
     }).join("");
   }
 

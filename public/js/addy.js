@@ -49,7 +49,7 @@
   };
 
   // ---------- tabs ----------
-  const TABS = [["overview", "Overview"], ["users", "Users"], ["board", "Leaderboard"], ["stars", "Stars"], ["mod", "Moderation"], ["system", "System"]];
+  const TABS = [["overview", "Overview"], ["users", "Contributors"], ["board", "Leaderboard"], ["stars", "Stars"], ["mod", "Moderation"], ["system", "System"]];
   function initTabs() {
     const box = $("addyTabs");
     if (box.dataset.done) return;
@@ -90,7 +90,7 @@
   async function loadOverview() {
     const d = await api("/api/addy/overview");
     $("ovStats").innerHTML = [
-      [d.totalUsers, "Total users"], [d.signups7, "Signups (7d)"], [d.signups30, "Signups (30d)"],
+      [d.totalUsers, "Contributors"], [d.signups7, "New (7d)"], [d.signups30, "New (30d)"],
       [d.totalEngagers, "Engagers listed"], [d.totalStars, "Stars given"],
     ].map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
     $("ovPlatforms").innerHTML = `<table class="adm"><tr><th>Platform</th><th>Engagers</th><th>Stars</th><th>Claimed handles</th></tr>` +
@@ -103,7 +103,7 @@
     const q = $("userSearch").value.trim();
     const d = await api(`/api/addy/users?q=${encodeURIComponent(q)}&take=25&skip=${userSkip}`);
     const pages = Math.ceil(d.total / 25);
-    let h = `<table class="adm"><tr><th>User</th><th>Promotes</th><th>Handles</th><th>Engagers</th><th>Joined</th><th>Status</th><th></th></tr>`;
+    let h = `<table class="adm"><tr><th>Contributor</th><th>Promotes</th><th>Handles</th><th>Engagers</th><th>Joined</th><th>Status</th><th></th></tr>`;
     for (const u of d.users) {
       const handles = u.handles.map((x) => `${esc(PLATFORMS[x.platform] || x.platform)}: @${esc(x.handle)}`).join("<br>") || "—";
       h += `<tr><td><b>${esc(u.displayName || "(no name)")}</b><br><span style="color:var(--muted)">${esc(u.email)}</span></td>
@@ -118,7 +118,7 @@
           <button class="btn small danger" data-u="del" data-id="${u.id}">Delete</button>
         </td></tr>`;
     }
-    h += `</table><p style="color:var(--muted);font-size:13px;margin-top:8px">${d.total} users · page ${Math.floor(userSkip / 25) + 1} of ${Math.max(pages, 1)}</p>`;
+    h += `</table><p style="color:var(--muted);font-size:13px;margin-top:8px">${d.total} contributors · page ${Math.floor(userSkip / 25) + 1} of ${Math.max(pages, 1)}</p>`;
     if (pages > 1) {
       h += `<div style="margin-top:8px;display:flex;gap:8px">
         <button class="btn small ghost" id="uPrev" ${userSkip === 0 ? "disabled" : ""}>← Prev</button>
@@ -134,8 +134,8 @@
     const b = ev.target.closest("[data-u]");
     if (!b) return;
     const id = b.dataset.id, act = b.dataset.u;
-    if (act === "del" && !confirm("Delete this user and ALL their data?")) return;
-    if (act === "suspend" && !confirm("Suspend this user? They will be logged out immediately.")) return;
+    if (act === "del" && !confirm("Delete this contributor and ALL their data?")) return;
+    if (act === "suspend" && !confirm("Suspend this contributor? They will be logged out immediately.")) return;
     try {
       if (act === "del") await api("/api/addy/users/" + id, { method: "DELETE" });
       else await api(`/api/addy/users/${id}/${act}`, { method: "POST" });
@@ -191,7 +191,7 @@
     const d = await api("/api/addy/system");
     const c = d.counts;
     $("sysInfo").innerHTML = `<div class="stat-grid">
-      ${[["Users", c.users], ["Engagers", c.engagers], ["Claimed handles", c.handles], ["Notes (count only)", c.notes], ["Sessions", c.sessions], ["Uptime", Math.round(d.uptimeSec / 60) + " min"], ["Node", d.node]].map(([l, n]) => `<div class="stat"><div class="n" style="font-size:20px">${esc(String(n))}</div><div class="l">${l}</div></div>`).join("")}
+      ${[["Contributors", c.users], ["Engagers", c.engagers], ["Claimed handles", c.handles], ["Notes (count only)", c.notes], ["Sessions", c.sessions], ["Uptime", Math.round(d.uptimeSec / 60) + " min"], ["Node", d.node]].map(([l, n]) => `<div class="stat"><div class="n" style="font-size:20px">${esc(String(n))}</div><div class="l">${l}</div></div>`).join("")}
     </div>`;
   }
 

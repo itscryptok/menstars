@@ -29,7 +29,7 @@
       }
       ol.innerHTML = d.top.map((e) => {
         const target = e.link.kind === "external" ? ' target="_blank" rel="noopener"' : "";
-        const badge = e.link.kind === "internal" ? '<span class="reg-badge">MEN member</span>' : "";
+        const badge = e.link.kind === "internal" ? '<span class="reg-badge">contributor</span>' : "";
         return `<li><span class="rank">${e.rank}</span>
           <span class="who"><a href="${esc(e.link.url)}"${target}>@${esc(e.handle)}</a>${badge}
           <div class="eng-meta">${e.contributors} contributor${e.contributors === 1 ? "" : "s"}</div></span>

@@ -2,7 +2,13 @@
 
 **It's a MEN's world. Star my Engagers.**
 
-Menstars is a personal CRM for social-media engagers. Build your link list of top engagers across
+Menstars is a personal CRM for social-media engagers.
+
+## Terminology
+
+- **Contributor** — every registered Menstars user.
+- **Engager** — a person who has received at least one star (registered or not).
+  Leaderboards only ever list engagers (starred people), never unstarred names. Build your link list of top engagers across
 TikTok, Instagram, YouTube and Facebook — add private notes for every engager, star them
 whenever they impress you (no limit), rank and search by stars earned, and see who added
 *you* to their list. Plus a private notepad that is never public.

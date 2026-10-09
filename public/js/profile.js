@@ -22,7 +22,7 @@
           <p style="color:var(--muted)">${esc(d.displayName)} · ${esc(d.platformLabel || platform)}</p>
           ${d.topBrand ? `<p style="margin-top:8px"><span class="slogan"><b>Promotes:</b> ${esc(d.topBrand)}</span></p>` : ""}
           <div class="stars-big">★ ${d.totalStars} star${d.totalStars === 1 ? "" : "s"} earned</div>
-          <p style="color:var(--faint);font-size:13px;margin-top:6px">MEN member since ${new Date(d.memberSince).toLocaleDateString()}</p>
+          <p style="color:var(--faint);font-size:13px;margin-top:6px">Contributor since ${new Date(d.memberSince).toLocaleDateString()}</p>
         </div>
         <div class="plinks">
           ${d.links.map((l) => `
