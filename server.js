@@ -558,7 +558,7 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
 // niches: derived from the niches of contributors who starred each handle
 // (an engager can carry multiple niches). Optional nicheFilter ranks only
 // stars given by contributors carrying that niche.
-async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDealsOnly = false, handleQuery = null) {
+async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDealsOnly = false, handleQuery = null, contributorUserId = null) {
   // When a niche filter is set, only stars from contributors carrying that
   // niche count toward the ranking — the honest "top 7 for Food".
   const params = [platform, limit];
@@ -574,11 +574,16 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
     params.push(like);
     handleWhere = ` AND LOWER(e.username) LIKE $${params.length} ESCAPE '\\'`;
   }
+  let contributorWhere = "";
+  if (contributorUserId) {
+    params.push(contributorUserId);
+    contributorWhere = ` AND e."userId" = $${params.length}`;
+  }
   const rows = await prisma.$queryRawUnsafe(
     `SELECT e.platform, MIN(e.username) AS display, LOWER(e.username) AS h,
             SUM(e.stars)::int AS total_stars, COUNT(DISTINCT e."userId")::int AS contributors
      FROM "Engager" e ${nicheJoin}
-     WHERE e.platform = $1 AND e.stars > 0${handleWhere}
+     WHERE e.platform = $1 AND e.stars > 0${handleWhere}${contributorWhere}
      GROUP BY e.platform, LOWER(e.username)
      HAVING SUM(e.stars) > 0
      ORDER BY total_stars DESC, contributors DESC
@@ -639,7 +644,28 @@ app.get("/api/top-engagers", async (req, res) => {
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
     const niche = String(req.query.niche || "").trim() || null;
     const q = String(req.query.q || "").trim().slice(0, 40) || null;
-    res.json({ platform, niche, q, top: await aggregatedTop(platform, 7, niche, false, q) });
+    const contributor = String(req.query.contributor || "").trim().replace(/^@/, "").slice(0, 40) || null;
+    let contributorUserId = null;
+    let contributorFound = !contributor;
+    let contributorHandle = null;
+    if (contributor) {
+      const claimed = await prisma.claimedHandle.findFirst({
+        where: { platform, handle: { equals: contributor, mode: "insensitive" } },
+        select: { userId: true, handle: true },
+      });
+      if (claimed) {
+        contributorUserId = claimed.userId;
+        contributorFound = true;
+        contributorHandle = claimed.handle;
+      }
+    }
+    res.json({
+      platform, niche, q,
+      contributor: contributorHandle, contributorFound,
+      top: contributorFound
+        ? await aggregatedTop(platform, 7, niche, false, q, contributorUserId)
+        : [],
+    });
   } catch (e) {
     console.error("top-engagers error:", e.message);
     res.status(500).json({ error: "Something went wrong. Try again." });

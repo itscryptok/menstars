@@ -3,7 +3,10 @@
   let platform = "tiktok";
   let niche = "";
   let query = "";
+  let contributor = "";
+  let contributorFound = true;
   let searchTimer = null;
+  let contribTimer = null;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -23,15 +26,19 @@
 
   function updateTitle() {
     const t = $("boardTitle");
-    if (t) t.textContent = query
-      ? `🔍 Top 7 results for "${query}" — ${PLATFORMS[platform]}`
-      : "🏆 Top 7 — " + PLATFORMS[platform] + (niche ? " · " + niche : "");
+    if (t) t.textContent = contributor
+      ? `🏆 @${contributor}'s Top 7 — ${PLATFORMS[platform]}`
+      : query
+        ? `🔍 Top 7 results for "${query}" — ${PLATFORMS[platform]}`
+        : "🏆 Top 7 — " + PLATFORMS[platform] + (niche ? " · " + niche : "");
     const sub = $("boardSub");
-    if (sub) sub.textContent = query
-      ? "The 7 most-starred matching engagers across the Menstars community."
-      : niche
-        ? "Ranked by stars from " + niche + " contributors only."
-        : "The most-starred engagers across the whole Menstars community — ranked by total stars from every contributor combined.";
+    if (sub) sub.textContent = contributor
+      ? `The 7 most-starred engagers on @${contributor}'s list.`
+      : query
+        ? "The 7 most-starred matching engagers across the Menstars community."
+        : niche
+          ? "Ranked by stars from " + niche + " contributors only."
+          : "The most-starred engagers across the whole Menstars community — ranked by total stars from every contributor combined.";
   }
 
   async function loadNiches() {
@@ -51,12 +58,17 @@
     if (!ol) return;
     ol.innerHTML = '<div class="empty">Loading…</div>';
     try {
-      const r = await fetch("/api/top-engagers?platform=" + platform + (niche ? "&niche=" + encodeURIComponent(niche) : "") + (query ? "&q=" + encodeURIComponent(query) : ""));
+      const r = await fetch("/api/top-engagers?platform=" + platform + (niche ? "&niche=" + encodeURIComponent(niche) : "") + (query ? "&q=" + encodeURIComponent(query) : "") + (contributor ? "&contributor=" + encodeURIComponent(contributor) : ""));
       const d = await r.json();
+      contributorFound = d.contributorFound !== false;
       if (!d.top.length) {
-        ol.innerHTML = '<div class="empty">' + (query
-          ? 'No engagers matching "' + esc(query) + '" on ' + esc(PLATFORMS[platform]) + "."
-          : "No starred engagers yet" + (niche ? " for " + esc(niche) : "") + " on " + esc(PLATFORMS[platform]) + '. <a href="/login?mode=signup">Be the first to star someone. ★</a>') + "</div>";
+        ol.innerHTML = '<div class="empty">' + (!contributorFound && contributor
+          ? 'No contributor "@' + esc(contributor) + '" found on ' + esc(PLATFORMS[platform]) + ". They may not have claimed that handle yet."
+          : contributor
+            ? '@' + esc(contributor) + " hasn't starred anyone on " + esc(PLATFORMS[platform]) + " yet."
+            : query
+              ? 'No engagers matching "' + esc(query) + '" on ' + esc(PLATFORMS[platform]) + "."
+              : "No starred engagers yet" + (niche ? " for " + esc(niche) : "") + " on " + esc(PLATFORMS[platform]) + '. <a href="/login?mode=signup">Be the first to star someone. ★</a>') + "</div>";
         return;
       }
       ol.innerHTML = d.top.map((e) => {
@@ -84,6 +96,17 @@
         updateTitle();
         load();
       }, 300);
+    });
+  }
+  const contribInput = $("contributorFilter");
+  if (contribInput) {
+    contribInput.addEventListener("input", () => {
+      clearTimeout(contribTimer);
+      contribTimer = setTimeout(() => {
+        contributor = contribInput.value.trim().replace(/^@/, "");
+        updateTitle();
+        load();
+      }, 400);
     });
   }
   load();
