@@ -1,4 +1,4 @@
-/* Menstars day/night theme. Day (gray + lime) is the default; night = deep black + Cryptok blue.
+/* Menstars HQ day/night theme. Day (gray + lime) is the default; night = deep black + Cryptok blue.
    A tiny inline script in each page's <head> applies the saved theme before
    first paint (no flash); this file wires the toggle button. */
 (function () {

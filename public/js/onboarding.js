@@ -1,4 +1,4 @@
-// Menstars onboarding: 3 friendly skippable steps after signup.
+// Menstars HQ onboarding: 3 friendly skippable steps after signup.
 (function () {
   const PLATFORMS = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube", x: "X.com", facebook: "Facebook" };
   const $ = (id) => document.getElementById(id);

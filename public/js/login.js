@@ -12,7 +12,7 @@
 
   let nichePicker = null;
   if (isSignup) {
-    title.textContent = "Join Menstars — it's free";
+    title.textContent = "Join Menstars HQ — it's free";
     sub.textContent = "Email and password, plus your niches (optional).";
     submitBtn.textContent = "Create my free account";
     switchLine.innerHTML = 'Have an account? <a href="/login">Log in</a>';

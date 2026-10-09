@@ -34,7 +34,7 @@
       ? `The 7 most-starred engagers on @${contributor}'s list.`
       : niche
         ? "Ranked by stars from " + niche + " contributors only."
-        : "The most-starred engagers across the whole Menstars community — ranked by total stars from every contributor combined.";
+        : "The most-starred engagers across the whole Menstars HQ community — ranked by total stars from every contributor combined.";
   }
 
   async function loadNiches() {

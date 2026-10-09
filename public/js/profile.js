@@ -14,7 +14,7 @@
     .then(async (r) => {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Profile not found.");
-      document.title = "@" + d.handle + " — Menstars";
+      document.title = "@" + d.handle + " — Menstars HQ";
       box.innerHTML = `
         <div class="profile-hero">
           <div class="avatar">${esc(d.handle.charAt(0).toUpperCase())}</div>
