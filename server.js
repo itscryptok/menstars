@@ -1041,6 +1041,12 @@ app.get("/profile/:platform/:handle", (req, res) =>
 app.get("/top-engagers", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "top-engagers.html"))
 );
+app.get("/terms", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "terms.html"))
+);
+app.get("/privacy", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "privacy.html"))
+);
 app.get("/onboarding", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "onboarding.html"))
 );
