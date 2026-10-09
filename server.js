@@ -110,6 +110,7 @@ function publicUser(u) {
     displayName: u.displayName,
     topBrand: u.topBrand || null,
     niche: u.niche || null,
+    openToBrandDeals: !!u.openToBrandDeals,
     suspended: !!u.suspended,
     createdAt: u.createdAt,
   };
@@ -206,6 +207,8 @@ app.put("/api/account", requireAuth, async (req, res) => {
       data.topBrand = String(req.body.topBrand || "").trim().slice(0, 80) || null;
     if (req.body.niche !== undefined)
       data.niche = normalizeNiche(req.body.niche, req.body.nicheOther);
+    if (req.body.openToBrandDeals !== undefined)
+      data.openToBrandDeals = !!req.body.openToBrandDeals;
     const user = await prisma.user.update({ where: { id: req.user.id }, data });
     res.json({ user: publicUser(user) });
   } catch (e) {
@@ -455,6 +458,7 @@ app.get("/api/profile/:platform/:handle", async (req, res) => {
       platformLabel: PLATFORMS[platform].label,
       topBrand: claimed.user.topBrand || null,
       niche: claimed.user.niche || null,
+      openToBrandDeals: !!claimed.user.openToBrandDeals,
       totalStars: agg._sum.stars || 0,
       memberSince: claimed.user.createdAt,
       links: claimed.user.handles.map((h) => ({
@@ -524,7 +528,7 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
 // niches: derived from the niches of contributors who starred each handle
 // (an engager can carry multiple niches). Optional nicheFilter keeps only
 // engagers known to engage with that niche.
-async function aggregatedTop(platform, limit = 7, nicheFilter = null) {
+async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDealsOnly = false) {
   const rows = await prisma.$queryRawUnsafe(
     `SELECT platform, MIN(username) AS display, LOWER(username) AS h,
             SUM(stars)::int AS total_stars, COUNT(DISTINCT "userId")::int AS contributors
@@ -542,7 +546,7 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null) {
     rank += 1;
     const reg = await prisma.claimedHandle.findFirst({
       where: { platform, handle: { equals: r.h, mode: "insensitive" } },
-      include: { user: { select: { topBrand: true } } },
+      include: { user: { select: { topBrand: true, openToBrandDeals: true } } },
     });
     const nicheRows = await prisma.$queryRawUnsafe(
       `SELECT DISTINCT u.niche AS niche FROM "Engager" e
@@ -566,12 +570,15 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null) {
       contributors: r.contributors,
       niches,
       topBrand: (reg && reg.user.topBrand) || null,
+      openToBrandDeals: !!(reg && reg.user.openToBrandDeals),
       link: reg
         ? { kind: "internal", url: `/profile/${platform}/${encodeURIComponent(reg.handle)}` }
         : { kind: "external", url: PLATFORMS[platform].profileUrl(r.display) },
     });
   }
-  return out;
+  // Brand-facing matching: only contributors who opted in. Stars stay the
+  // quality signal — no manual vetting; the toggle is the consent.
+  return brandDealsOnly ? out.filter((t) => t.openToBrandDeals) : out;
 }
 
 app.get("/api/top-engagers", async (req, res) => {
@@ -713,18 +720,21 @@ app.get("/api/addy/users", requireAdmin, async (req, res) => {
   try {
     const q = String(req.query.q || "").trim();
     const niche = String(req.query.niche || "").trim();
+    const brandDeals = String(req.query.brandDeals || "");
     const take = Math.min(parseInt(req.query.take || "25", 10) || 25, 100);
     const skip = parseInt(req.query.skip || "0", 10) || 0;
     const where = q
       ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { displayName: { contains: q, mode: "insensitive" } }] }
       : {};
     if (niche) where.niche = { equals: niche, mode: "insensitive" };
+    if (brandDeals === "on") where.openToBrandDeals = true;
+    if (brandDeals === "off") where.openToBrandDeals = false;
     const [total, users] = await Promise.all([
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
         select: {
-          id: true, email: true, displayName: true, topBrand: true, niche: true, suspended: true, createdAt: true,
+          id: true, email: true, displayName: true, topBrand: true, niche: true, openToBrandDeals: true, suspended: true, createdAt: true,
           handles: { select: { platform: true, handle: true } },
           _count: { select: { engagers: true, notes: true } },
         },
@@ -794,7 +804,8 @@ app.get("/api/addy/leaderboard", requireAdmin, async (req, res) => {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
     const niche = String(req.query.niche || "").trim() || null;
-    res.json({ platform, top: await aggregatedTop(platform, 50, niche) });
+    const brandDealsOnly = String(req.query.brandDeals || "") === "on";
+    res.json({ platform, top: await aggregatedTop(platform, 50, niche, brandDealsOnly) });
   } catch (e) {
     console.error("addy leaderboard error:", e.message);
     res.status(500).json({ error: "Something went wrong." });
@@ -806,11 +817,12 @@ app.get("/api/addy/leaderboard.csv", requireAdmin, async (req, res) => {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
     const niche = String(req.query.niche || "").trim() || null;
-    const top = await aggregatedTop(platform, 100, niche);
+    const brandDealsOnly = String(req.query.brandDeals || "") === "on";
+    const top = await aggregatedTop(platform, 100, niche, brandDealsOnly);
     const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = ["rank,handle,platform,total_stars,contributors,niches,promotes_brand,profile_url"];
+    const lines = ["rank,handle,platform,total_stars,contributors,niches,open_to_brand_deals,promotes_brand,profile_url"];
     for (const t of top) {
-      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc((t.niches || []).join("; ")), esc(t.topBrand || ""), esc(t.link.url)].join(","));
+      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc((t.niches || []).join("; ")), t.openToBrandDeals ? "yes" : "no", esc(t.topBrand || ""), esc(t.link.url)].join(","));
     }
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="menstars-top-engagers-${platform}.csv"`);

@@ -66,6 +66,9 @@ textarea.input{min-height:90px;resize:vertical}
 /* info tooltip */
 .info-icon{display:inline-flex;width:17px;height:17px;border-radius:50%;border:1px solid var(--faint);color:var(--faint);font-size:11px;font-weight:800;align-items:center;justify-content:center;cursor:pointer;margin-left:6px;font-style:normal;vertical-align:1px}
 .info-icon:hover{border-color:var(--lime);color:var(--lime)}
+/* checkbox rows */
+.check-label{display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;font-size:15px}
+.check-label input[type="checkbox"],.check-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--lime);cursor:pointer}
 .info-pop{display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);margin-top:8px;font-weight:400}
 .info-pop.show{display:block}
 /* app */
@@ -158,6 +161,7 @@ main.with-nav{padding-bottom:86px}
 .profile-hero .avatar{width:84px;height:84px;font-size:38px;margin:0 auto 14px}
 .profile-hero h1{font-size:30px}
 .profile-hero .stars-big{color:var(--lime);font-size:20px;font-weight:800;margin-top:8px}
+.deal-badge{display:inline-block;background:var(--lime);color:var(--ink);font-weight:800;font-size:13.5px;border-radius:999px;padding:6px 14px}
 .plinks{display:grid;gap:10px;max-width:480px;margin:22px auto}
 .plink{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;font-weight:700;color:var(--text)}
 .plink:hover{border-color:var(--lime);text-decoration:none}

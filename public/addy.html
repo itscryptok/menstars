@@ -70,6 +70,11 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
           <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
           <option>Travel</option><option>Tech</option><option>Other</option>
         </select>
+        <select class="input" id="userBrandDeals">
+          <option value="">Brand deals: all</option>
+          <option value="on">Open to brand deals</option>
+          <option value="off">Not open</option>
+        </select>
         <button class="btn small" id="userSearchBtn">Search</button>
       </div>
       <div id="usersTable"></div>
@@ -87,6 +92,7 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
           <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
           <option>Travel</option><option>Tech</option><option>Other</option>
         </select>
+        <label class="check-label" style="font-size:14px"><input type="checkbox" id="boardBrandDeals"> Open to brand deals only</label>
         <button class="btn small" id="boardNicheBtn">Filter</button>
       </div>
       <div id="boardTable"></div>

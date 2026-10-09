@@ -44,6 +44,7 @@
     else if (me.niche) { pfNiche.value = "Other"; pfOther.value = me.niche; pfOtherWrap.style.display = "block"; }
     else { pfNiche.value = ""; pfOtherWrap.style.display = "none"; }
     pfNiche.onchange = () => { pfOtherWrap.style.display = pfNiche.value === "Other" ? "block" : "none"; };
+    $("pfBrandDeals").checked = !!me.openToBrandDeals;
     renderTabs();
     renderHandlesForm();
     await refreshAll();
@@ -69,6 +70,7 @@
           topBrand: $("pfBrand").value.trim(),
           niche: $("pfNiche").value,
           nicheOther: $("pfNicheOther").value.trim(),
+          openToBrandDeals: $("pfBrandDeals").checked,
         }),
       });
       me = d.user;
