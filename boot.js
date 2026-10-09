@@ -75,6 +75,16 @@ async function step(name, fn) {
   bootState.dbOk = bootState.steps.every((s) => s.ok);
   global.__menBoot = bootState;
   console.log("boot state:", JSON.stringify(bootState.steps.map((s) => ({ name: s.name, ok: s.ok }))));
+  // Warm up the Prisma engine so the first user request doesn't pay cold-start.
+  try {
+    const { PrismaClient } = require("@prisma/client");
+    const warm = new PrismaClient();
+    await warm.$queryRawUnsafe("SELECT 1");
+    await warm.$disconnect();
+    console.log("boot: prisma warmup ok");
+  } catch (e) {
+    console.log("boot: warmup skipped:", String(e.message).slice(0, 120));
+  }
   require("./server.js");
 })().catch((e) => {
   console.error("boot fatal:", redact(e.message));

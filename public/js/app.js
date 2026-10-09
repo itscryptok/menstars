@@ -73,6 +73,16 @@
     location.href = "/";
   };
 
+  const delBtn = $("deleteAccountBtn");
+  if (delBtn) delBtn.onclick = async () => {
+    if (!confirm("Delete your Menstars account and ALL your data? This can't be undone.")) return;
+    if (!confirm("Last chance — really delete everything?")) return;
+    try {
+      await api("/api/auth/account", { method: "DELETE" });
+      location.href = "/";
+    } catch (e) { alert(e.message); }
+  };
+
   // ---------- top 7 ----------
   async function loadTop7() {
     const d = await api("/api/top7?platform=" + platform);

@@ -102,59 +102,6 @@ async function getHandlesMap(userId) {
 // ---------- health ----------
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
-// Temporary boot diagnostic (messages only, no secrets). Remove once stable.
-app.get("/api/boot-status", (req, res) => {
-  res.json(global.__menBoot || { steps: [], dbOk: false, note: "boot did not run" });
-});
-
-// Temporary DB diagnostic: raw pg vs Prisma client, each with a hard timeout.
-app.get("/api/db-ping", async (req, res) => {
-  const out = {};
-  const race = (p, ms) =>
-    Promise.race([
-      p.then(
-        (v) => ({ ok: true, v }),
-        (e) => ({ ok: false, error: String(e.message || e).replace(/:\/\/[^:\s/]+:[^@\s/]+@/g, "://***@").slice(0, 300) })
-      ),
-      new Promise((resolve) => setTimeout(() => resolve({ ok: false, error: "TIMEOUT after " + ms + "ms" }), ms)),
-    ]);
-  try {
-    const { Client } = require("pg");
-    const c = new Client({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 10000,
-    });
-    out.pg_connect = await race(c.connect(), 12000);
-    if (out.pg_connect.ok) {
-      out.pg_query = await race(c.query("SELECT 1 AS one"), 12000);
-      await c.end().catch(() => {});
-    }
-  } catch (e) {
-    out.pg_fatal = String(e.message).slice(0, 200);
-  }
-  try {
-    out.prisma_query = await race(prisma.$queryRawUnsafe("SELECT 1 AS one"), 15000);
-  } catch (e) {
-    out.prisma_fatal = String(e.message).slice(0, 200);
-  }
-  try {
-    const t0 = Date.now();
-    const r = await race(prisma.user.findMany({ take: 1 }), 20000);
-    out.prisma_model = { ok: r.ok, ms: Date.now() - t0, error: (r.error || "").slice(0, 200), count: r.ok && r.v ? r.v.length : null };
-  } catch (e) {
-    out.prisma_model = { ok: false, error: String(e.message).slice(0, 200) };
-  }
-  try {
-    const t0 = Date.now();
-    const h = await race(require("bcryptjs").hash("testpass123", 10), 30000);
-    out.bcrypt = { ok: h.ok, ms: Date.now() - t0, error: (h.error || "").slice(0, 200) };
-  } catch (e) {
-    out.bcrypt = { ok: false, error: String(e.message).slice(0, 200) };
-  }
-  res.json(out);
-});
-
 // ---------- auth ----------
 app.post("/api/auth/signup", async (req, res) => {
   try {
@@ -205,6 +152,17 @@ app.post("/api/auth/logout", requireAuth, async (req, res) => {
   if (token) await prisma.session.delete({ where: { token } }).catch(() => {});
   clearSessionCookie(res);
   res.json({ ok: true });
+});
+
+app.delete("/api/auth/account", requireAuth, async (req, res) => {
+  try {
+    await prisma.user.delete({ where: { id: req.user.id } });
+    clearSessionCookie(res);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("account delete error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
 });
 
 app.get("/api/auth/me", async (req, res) => {
