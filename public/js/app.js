@@ -206,7 +206,16 @@
         btn.textContent = "Saved ✓";
         setTimeout(() => (btn.textContent = "Save note"), 1500);
       } else if (act === "del") {
-        if (!confirm("Remove this engager from your list?")) return;
+        if (!btn.dataset.confirming) {
+          btn.dataset.confirming = "1";
+          btn.textContent = "Tap again to remove";
+          btn.classList.add("confirming");
+          btn.dataset.timer = setTimeout(() => {
+            if (btn.isConnected) { delete btn.dataset.confirming; btn.textContent = "Remove"; btn.classList.remove("confirming"); }
+          }, 6000);
+          return;
+        }
+        clearTimeout(+btn.dataset.timer);
         await api("/api/engagers/" + id, { method: "DELETE" });
         await refreshAll();
       }
@@ -295,7 +304,15 @@
     if (!btn) return;
     const id = ev.target.closest(".note").dataset.id;
     if (btn.dataset.nact === "del") {
-      if (!confirm("Delete this note?")) return;
+      if (!btn.dataset.confirming) {
+        btn.dataset.confirming = "1";
+        btn.textContent = "Tap again to delete";
+        btn.classList.add("confirming");
+        setTimeout(() => {
+          if (btn.isConnected) { delete btn.dataset.confirming; btn.textContent = "Delete"; btn.classList.remove("confirming"); }
+        }, 6000);
+        return;
+      }
       await api("/api/notes/" + id, { method: "DELETE" }).catch((e) => alert(e.message));
       loadNotes();
     } else {

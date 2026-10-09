@@ -48,6 +48,7 @@ a:hover{text-decoration:underline}
 .btn.small{padding:7px 14px;font-size:13px;border-radius:10px}
 .btn.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
 #deleteAccountYes{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:700}
+.btn.small.danger.confirming{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:700}
 .btn.block{width:100%}
 /* hero */
 .hero{padding:64px 0 40px;text-align:center}
