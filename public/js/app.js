@@ -8,6 +8,7 @@
   };
   let platform = "tiktok";
   let me = null;
+  let pfNichePicker = null;
   let myHandles = {};
   let searchTimer = null;
 
@@ -39,12 +40,7 @@
     $("acctSince").textContent = new Date(me.createdAt).toLocaleDateString();
     $("pfName").value = me.displayName || "";
     $("pfBrand").value = me.topBrand || "";
-    const NICHES = ["Beauty","Food","Comedy","Fitness","Fashion","Music","Dance","Gaming","Education","Business","Lifestyle","Sports","Travel","Tech","Other"];
-    const pfNiche = $("pfNiche"), pfOther = $("pfNicheOther"), pfOtherWrap = $("pfNicheOtherWrap");
-    if (me.niche && NICHES.includes(me.niche)) { pfNiche.value = me.niche; pfOtherWrap.style.display = "none"; }
-    else if (me.niche) { pfNiche.value = "Other"; pfOther.value = me.niche; pfOtherWrap.style.display = "block"; }
-    else { pfNiche.value = ""; pfOtherWrap.style.display = "none"; }
-    pfNiche.onchange = () => { pfOtherWrap.style.display = pfNiche.value === "Other" ? "block" : "none"; };
+    pfNichePicker = await initNichePicker($("pfNichePicker"), { selected: me.niches || [] });
     $("pfBrandDeals").checked = !!me.openToBrandDeals;
     renderTabs();
     renderHandlesForm();
@@ -69,8 +65,7 @@
         body: JSON.stringify({
           displayName: $("pfName").value.trim(),
           topBrand: $("pfBrand").value.trim(),
-          niche: $("pfNiche").value,
-          nicheOther: $("pfNicheOther").value.trim(),
+          niches: pfNichePicker ? pfNichePicker.getSelection().niches : [],
           openToBrandDeals: $("pfBrandDeals").checked,
         }),
       });

@@ -24,24 +24,42 @@ const PLATFORMS = {
 };
 const PLATFORM_KEYS = Object.keys(PLATFORMS);
 
-// Contributor niches (v1: one per contributor). "Other" takes free text.
-const NICHES = [
+// Contributor niches: canonical list lives in the DB (Niche table) and grows
+// as contributors suggest new ones via the "Other" field.
+const BASE_NICHES = [
   "Beauty", "Food", "Comedy", "Fitness", "Fashion", "Music", "Dance",
-  "Gaming", "Education", "Business", "Lifestyle", "Sports", "Travel", "Tech", "Other",
+  "Gaming", "Education", "Business", "Lifestyle", "Sports", "Travel", "Tech",
 ];
 
-// Normalize a (dropdown, otherText) pair into a single stored value.
-// Returns null when blank. "Other" + custom text stores the custom text.
-function normalizeNiche(niche, otherText) {
-  const n = String(niche || "").trim();
-  if (!n) return null;
-  if (n === "Other") {
-    const t = String(otherText || "").trim().slice(0, 40);
-    return t || "Other";
+async function ensureBaseNiches() {
+  for (const n of BASE_NICHES) {
+    await prisma.niche.upsert({ where: { name: n }, update: {}, create: { name: n, source: "base" } });
   }
-  if (NICHES.includes(n)) return n;
-  // Tolerate a raw custom value (e.g. saved as free text before).
-  return n.slice(0, 40) || null;
+}
+
+function cleanNicheName(s) {
+  return String(s || "").trim().replace(/\s+/g, " ").slice(0, 40);
+}
+
+// Find-or-create a niche (case-insensitive); returns the canonical stored name.
+async function ensureNiche(raw) {
+  const name = cleanNicheName(raw);
+  if (!name) return null;
+  const existing = await prisma.niche.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing) return existing.name;
+  const created = await prisma.niche.create({ data: { name, source: "user" } });
+  return created.name;
+}
+
+// Normalize a submitted niche list: match canonical names case-insensitively,
+// creating new catalog entries for anything genuinely new. Deduped, order kept.
+async function resolveNiches(list) {
+  const out = [];
+  for (const raw of Array.isArray(list) ? list : []) {
+    const name = await ensureNiche(raw);
+    if (name && !out.includes(name)) out.push(name);
+  }
+  return out;
 }
 
 function cleanHandle(raw) {
@@ -110,7 +128,8 @@ function publicUser(u) {
     email: u.email,
     displayName: u.displayName,
     topBrand: u.topBrand || null,
-    niche: u.niche || null,
+    niches: u.niches || [],
+    niche: (u.niches && u.niches[0]) || null, // backward-compat alias
     openToBrandDeals: !!u.openToBrandDeals,
     suspended: !!u.suspended,
     createdAt: u.createdAt,
@@ -139,9 +158,14 @@ app.post("/api/auth/signup", async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: "That email is already registered. Try logging in." });
     const passwordHash = await bcrypt.hash(password, 10);
-    // Frictionless signup: email + password only. Everything else is set
-    // later via the onboarding walkthrough or the profile page.
-    const user = await prisma.user.create({ data: { email, passwordHash } });
+    // Frictionless signup: email + password only. Niche picker is optional —
+    // everything else is set later via onboarding or the profile page.
+    const niches = await resolveNiches(req.body.niches);
+    if (req.body.otherNiche) {
+      const extra = await ensureNiche(req.body.otherNiche);
+      if (extra && !niches.includes(extra)) niches.push(extra);
+    }
+    const user = await prisma.user.create({ data: { email, passwordHash, niches } });
     const token = crypto.randomBytes(32).toString("hex");
     await prisma.session.create({
       data: { token, userId: user.id, expiresAt: new Date(Date.now() + SESSION_DAYS * 864e5) },
@@ -198,7 +222,7 @@ app.get("/api/auth/me", async (req, res) => {
   res.json({ user: publicUser(req.user), handles: await getHandlesMap(req.user.id) });
 });
 
-// Update own profile: display name + top brand + niche (all optional).
+// Update own profile: display name + top brand + niches (all optional).
 app.put("/api/account", requireAuth, async (req, res) => {
   try {
     const data = {};
@@ -206,8 +230,13 @@ app.put("/api/account", requireAuth, async (req, res) => {
       data.displayName = String(req.body.displayName || "").trim().slice(0, 60) || null;
     if (req.body.topBrand !== undefined)
       data.topBrand = String(req.body.topBrand || "").trim().slice(0, 80) || null;
-    if (req.body.niche !== undefined)
-      data.niche = normalizeNiche(req.body.niche, req.body.nicheOther);
+    if (req.body.niches !== undefined || req.body.otherNiche !== undefined || req.body.niche !== undefined) {
+      // Backward compat: a singular `niche` string is treated as one entry.
+      const list = Array.isArray(req.body.niches) ? req.body.niches.slice() : [];
+      if (typeof req.body.niche === "string" && req.body.niche.trim()) list.push(req.body.niche);
+      if (req.body.otherNiche) list.push(req.body.otherNiche);
+      data.niches = await resolveNiches(list);
+    }
     if (req.body.openToBrandDeals !== undefined)
       data.openToBrandDeals = !!req.body.openToBrandDeals;
     const user = await prisma.user.update({ where: { id: req.user.id }, data });
@@ -458,7 +487,7 @@ app.get("/api/profile/:platform/:handle", async (req, res) => {
       platform,
       platformLabel: PLATFORMS[platform].label,
       topBrand: claimed.user.topBrand || null,
-      niche: claimed.user.niche || null,
+      niches: claimed.user.niches || [],
       openToBrandDeals: !!claimed.user.openToBrandDeals,
       totalStars: agg._sum.stars || 0,
       memberSince: claimed.user.createdAt,
@@ -527,19 +556,27 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
 // Unique engager = platform + lowercased handle. Ranked by TOTAL stars from
 // every contributor combined. Public (advertiser/buyer-facing).
 // niches: derived from the niches of contributors who starred each handle
-// (an engager can carry multiple niches). Optional nicheFilter keeps only
-// engagers known to engage with that niche.
+// (an engager can carry multiple niches). Optional nicheFilter ranks only
+// stars given by contributors carrying that niche.
 async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDealsOnly = false) {
+  // When a niche filter is set, only stars from contributors carrying that
+  // niche count toward the ranking — the honest "top 7 for Food".
+  const params = [platform, limit];
+  let nicheJoin = "";
+  if (nicheFilter) {
+    nicheJoin = 'JOIN "User" u ON u.id = e."userId" AND $3 = ANY(u.niches)';
+    params.push(nicheFilter);
+  }
   const rows = await prisma.$queryRawUnsafe(
-    `SELECT platform, MIN(username) AS display, LOWER(username) AS h,
-            SUM(stars)::int AS total_stars, COUNT(DISTINCT "userId")::int AS contributors
-     FROM "Engager" WHERE platform = $1
-     GROUP BY platform, LOWER(username)
-     HAVING SUM(stars) > 0
+    `SELECT e.platform, MIN(e.username) AS display, LOWER(e.username) AS h,
+            SUM(e.stars)::int AS total_stars, COUNT(DISTINCT e."userId")::int AS contributors
+     FROM "Engager" e ${nicheJoin}
+     WHERE e.platform = $1 AND e.stars > 0
+     GROUP BY e.platform, LOWER(e.username)
+     HAVING SUM(e.stars) > 0
      ORDER BY total_stars DESC, contributors DESC
      LIMIT $2`,
-    platform,
-    limit
+    ...params
   );
   const out = [];
   let rank = 0;
@@ -550,19 +587,13 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
       include: { user: { select: { topBrand: true, openToBrandDeals: true } } },
     });
     const nicheRows = await prisma.$queryRawUnsafe(
-      `SELECT DISTINCT u.niche AS niche FROM "Engager" e
+      `SELECT DISTINCT unnest(u.niches) AS niche FROM "Engager" e
        JOIN "User" u ON u.id = e."userId"
-       WHERE e.platform = $1 AND LOWER(e.username) = $2
-         AND e.stars > 0 AND u.niche IS NOT NULL AND u.niche <> ''`,
+       WHERE e.platform = $1 AND LOWER(e.username) = $2 AND e.stars > 0`,
       platform,
       r.h
     );
-    const niches = nicheRows.map((x) => x.niche);
-    if (
-      nicheFilter &&
-      !niches.some((n) => n.toLowerCase() === String(nicheFilter).toLowerCase())
-    )
-      continue;
+    const niches = nicheRows.map((x) => x.niche).filter(Boolean);
     out.push({
       rank,
       handle: r.display,
@@ -582,11 +613,25 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
   return brandDealsOnly ? out.filter((t) => t.openToBrandDeals) : out;
 }
 
+// ---------- niche catalog (public) ----------
+// Canonical niche list, including contributor-suggested additions.
+app.get("/api/niches", async (req, res) => {
+  try {
+    await ensureBaseNiches();
+    const niches = await prisma.niche.findMany({ orderBy: { name: "asc" }, select: { name: true, source: true } });
+    res.json({ niches });
+  } catch (e) {
+    console.error("niches error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
 app.get("/api/top-engagers", async (req, res) => {
   try {
     const platform = String(req.query.platform || "");
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
-    res.json({ platform, top: await aggregatedTop(platform, 7) });
+    const niche = String(req.query.niche || "").trim() || null;
+    res.json({ platform, niche, top: await aggregatedTop(platform, 7, niche) });
   } catch (e) {
     console.error("top-engagers error:", e.message);
     res.status(500).json({ error: "Something went wrong. Try again." });
@@ -759,14 +804,18 @@ app.get("/api/addy/overview", requireAdmin, async (req, res) => {
         prisma.engager.aggregate({ _sum: { stars: true } }),
         prisma.engager.groupBy({ by: ["platform"], _count: { _all: true }, _sum: { stars: true } }),
         prisma.claimedHandle.groupBy({ by: ["platform"], _count: { _all: true } }),
-        prisma.user.groupBy({ by: ["niche"], _count: { _all: true }, where: { niche: { not: null } } }),
+        prisma.$queryRawUnsafe(
+          `SELECT n AS niche, COUNT(*)::int AS contributors
+           FROM "User", LATERAL unnest(niches) AS n
+           GROUP BY n ORDER BY contributors DESC`
+        ),
       ]);
     res.json({
       totalUsers, signups7, signups30, totalEngagers,
       totalStars: starsAgg._sum.stars || 0,
       perNiche: perNiche
         .filter((n) => n.niche)
-        .map((n) => ({ niche: n.niche, contributors: n._count._all }))
+        .map((n) => ({ niche: n.niche, contributors: Number(n.contributors) }))
         .sort((a, b) => b.contributors - a.contributors),
       perPlatform: perPlatform.map((p) => ({
         platform: p.platform,
@@ -792,7 +841,7 @@ app.get("/api/addy/users", requireAdmin, async (req, res) => {
     const where = q
       ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { displayName: { contains: q, mode: "insensitive" } }] }
       : {};
-    if (niche) where.niche = { equals: niche, mode: "insensitive" };
+    if (niche) where.niches = { has: niche };
     if (brandDeals === "on") where.openToBrandDeals = true;
     if (brandDeals === "off") where.openToBrandDeals = false;
     const [total, users] = await Promise.all([
@@ -800,7 +849,7 @@ app.get("/api/addy/users", requireAdmin, async (req, res) => {
       prisma.user.findMany({
         where,
         select: {
-          id: true, email: true, displayName: true, topBrand: true, niche: true, openToBrandDeals: true, suspended: true, createdAt: true,
+          id: true, email: true, displayName: true, topBrand: true, niches: true, openToBrandDeals: true, suspended: true, createdAt: true,
           handles: { select: { platform: true, handle: true } },
           _count: { select: { engagers: true, notes: true } },
         },
@@ -966,4 +1015,7 @@ app.get("/addy", (req, res) =>
 );
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "index.html")));
 
-app.listen(PORT, () => console.log(`MEN listening on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`MEN listening on ${PORT}`);
+  ensureBaseNiches().catch((e) => console.error("niche seed error:", e.message));
+});

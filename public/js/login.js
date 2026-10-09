@@ -10,11 +10,14 @@
   function showErr(msg) { err.textContent = msg; err.style.display = "block"; }
   function hideErr() { err.style.display = "none"; }
 
+  let nichePicker = null;
   if (isSignup) {
     title.textContent = "Join Menstars — it's free";
-    sub.textContent = "One step. Email and password, that's it.";
+    sub.textContent = "Email and password, plus your niches (optional).";
     submitBtn.textContent = "Create my free account";
     switchLine.innerHTML = 'Have an account? <a href="/login">Log in</a>';
+    document.getElementById("signupNicheWrap").style.display = "block";
+    initNichePicker(document.getElementById("signupNichePicker"), {}).then((p) => { nichePicker = p; });
   }
 
   // already logged in? go to app
@@ -29,10 +32,12 @@
     const password = document.getElementById("password").value;
     submitBtn.disabled = true;
     try {
+      const body = { email, password };
+      if (isSignup && nichePicker) body.niches = nichePicker.getSelection().niches;
       const r = await fetch(isSignup ? "/api/auth/signup" : "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
       const d = await r.json();
       if (!r.ok) { showErr(d.error || "Something went wrong."); return; }

@@ -204,3 +204,14 @@ main.with-nav{padding-bottom:86px}
 .engager-banner p{margin:0;font-size:14.5px;color:var(--ink)}
 .engager-banner-x{background:none;border:none;color:var(--ink);font-size:14px;cursor:pointer;opacity:.6;padding:4px 8px;flex-shrink:0}
 .engager-banner-x:hover{opacity:1}
+.niche-picker{display:grid;gap:10px}
+.niche-chips{display:flex;flex-wrap:wrap;gap:8px;max-height:172px;overflow-y:auto;padding:2px}
+.chip{border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;transition:all .12s}
+.chip:hover{border-color:var(--lime)}
+.chip.active{background:var(--lime);border-color:var(--lime);color:var(--ink);font-weight:800}
+.niche-other label{display:block;font-size:13.5px;color:var(--muted);margin-bottom:6px}
+.niche-other-row{display:flex;gap:8px}
+.niche-other-row .input{flex:1}
+.filter-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
+.filter-row .input{width:auto;min-width:180px}
+.filter-label{font-size:13.5px;color:var(--muted);font-weight:700}

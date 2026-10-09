@@ -13,7 +13,7 @@ model User {
   passwordHash String
   displayName  String?
   topBrand     String?
-  niche        String?
+  niches       String[]       @default([])
   openToBrandDeals Boolean      @default(false)
   suspended    Boolean         @default(false)
   createdAt    DateTime        @default(now())
@@ -21,6 +21,14 @@ model User {
   engagers     Engager[]
   notes        Note[]
   sessions     Session[]
+}
+
+// Canonical niche list (grows as contributors suggest new ones via "Other").
+model Niche {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  source    String   @default("base") // "base" = shipped list, "user" = suggested by a contributor
+  createdAt DateTime @default(now())
 }
 
 model ClaimedHandle {

@@ -99,18 +99,8 @@
         <input class="input" id="pfName" maxlength="60" placeholder="Your name">
       </div>
       <div class="field">
-        <label for="pfNiche">My niche (optional)</label>
-        <select class="input" id="pfNiche">
-          <option value="">Choose one…</option>
-          <option>Beauty</option><option>Food</option><option>Comedy</option><option>Fitness</option>
-          <option>Fashion</option><option>Music</option><option>Dance</option><option>Gaming</option>
-          <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
-          <option>Travel</option><option>Tech</option><option>Other</option>
-        </select>
-      </div>
-      <div class="field" id="pfNicheOtherWrap" style="display:none">
-        <label for="pfNicheOther">Tell us your niche</label>
-        <input class="input" id="pfNicheOther" maxlength="40" placeholder="e.g. Gardening, Real estate…">
+        <label>My niches <span style="color:var(--muted);font-weight:400">(optional — pick all that fit)</span></label>
+        <div class="niche-picker" id="pfNichePicker"></div>
       </div>
       <div class="field check-row">
         <label class="check-label" for="pfBrandDeals">
@@ -147,6 +137,7 @@
   </section>
 </main>
 
+<script src="/js/niche-chips.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

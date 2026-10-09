@@ -29,11 +29,18 @@
         <label for="password">Password</label>
         <input class="input" id="password" type="password" autocomplete="current-password" required minlength="8">
       </div>
+      <div id="signupNicheWrap" style="display:none">
+        <div class="field">
+          <label>My niches <span style="color:var(--muted);font-weight:400">(optional — pick all that fit)</span></label>
+          <div class="niche-picker" id="signupNichePicker"></div>
+        </div>
+      </div>
       <button class="btn block" type="submit" id="submitBtn">Log in</button>
     </form>
     <p class="form-switch" id="switchLine">New here? <a href="/login?mode=signup" id="switchLink">Create an account</a></p>
   </div>
 </main>
+<script src="/js/niche-chips.js"></script>
 <script src="/js/login.js"></script>
 </body>
 </html>

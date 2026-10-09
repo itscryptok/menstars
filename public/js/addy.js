@@ -30,6 +30,21 @@
     $("addySetup").style.display = "none";
     $("addyDash").style.display = "block";
     $("addyLogout").style.display = "inline-flex";
+    loadNicheOptions();
+  }
+
+  // Populate niche filter dropdowns from the live catalog (grows with suggestions).
+  async function loadNicheOptions() {
+    try {
+      const r = await fetch("/api/niches");
+      const d = await r.json();
+      const opts = '<option value="">All niches</option>' +
+        (d.niches || []).map((n) => `<option value="${esc(n.name)}">${esc(n.name)}${n.source === "user" ? " *" : ""}</option>`).join("");
+      for (const id of ["userNiche", "boardNiche"]) {
+        const sel = $(id);
+        if (sel) { const cur = sel.value; sel.innerHTML = opts; sel.value = cur; }
+      }
+    } catch { /* keep static fallback */ }
   }
 
   async function boot() {
@@ -137,7 +152,7 @@
     for (const u of d.users) {
       const handles = u.handles.map((x) => `${esc(PLATFORMS[x.platform] || x.platform)}: @${esc(x.handle)}`).join("<br>") || "—";
       h += `<tr><td><b>${esc(u.displayName || "(no name)")}</b><br><span style="color:var(--muted)">${esc(u.email)}</span></td>
-        <td>${u.niche ? esc(u.niche) : '<span style="color:var(--faint)">—</span>'}</td>
+        <td>${(u.niches && u.niches.length) ? u.niches.map(esc).join(", ") : '<span style="color:var(--faint)">—</span>'}</td>
         <td>${u.openToBrandDeals ? '<span class="pill ok">open</span>' : '<span style="color:var(--faint)">off</span>'}</td>
         <td>${u.topBrand ? esc(u.topBrand) : '<span style="color:var(--faint)">—</span>'}</td>
         <td>${handles}</td><td>${u._count.engagers}</td>

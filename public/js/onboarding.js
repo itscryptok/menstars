@@ -48,9 +48,11 @@
   }
 
   // niche "Other" toggle
-  $("obNiche").addEventListener("change", (e) => {
-    $("obNicheOtherWrap").style.display = e.target.value === "Other" ? "block" : "none";
-  });
+  let obNichePicker = null;
+  api("/api/auth/me").then((d) => {
+    const selected = (d.user && d.user.niches) || [];
+    return initNichePicker($("obNichePicker"), { selected });
+  }).then((p) => { obNichePicker = p; }).catch(() => {});
 
   $("obTrackBtn").onclick = async () => {
     hideErr();
@@ -82,11 +84,10 @@
       }
       if (Object.keys(handles).length) await api("/api/handles", { method: "PUT", body: JSON.stringify({ handles }) });
     } else if (step === 2) {
-      const niche = $("obNiche").value;
-      if (niche) await api("/api/account", {
-        method: "PUT",
-        body: JSON.stringify({ niche, nicheOther: $("obNicheOther").value.trim() }),
-      });
+      if (obNichePicker) {
+        const { niches } = obNichePicker.getSelection();
+        await api("/api/account", { method: "PUT", body: JSON.stringify({ niches }) });
+      }
     }
     // step 3 saves inline via the Track button; nothing required to continue.
   }

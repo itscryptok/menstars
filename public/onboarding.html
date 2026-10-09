@@ -37,21 +37,10 @@
 
     <!-- STEP 2: niche -->
     <section id="obStep2" hidden>
-      <h2>Pick your niche 🎯</h2>
-      <p class="sub">What kind of content do you and your people make? This helps brands find the right engagers later. One niche for now — you can change it anytime in My Profile.</p>
+      <h2>Pick your niches 🎯</h2>
+      <p class="sub">What kind of content do you and your people make? Pick all that fit — this helps brands find the right engagers later. You can change these anytime in My Profile.</p>
       <div class="field">
-        <label for="obNiche">My niche</label>
-        <select class="input" id="obNiche">
-          <option value="">Choose one…</option>
-          <option>Beauty</option><option>Food</option><option>Comedy</option><option>Fitness</option>
-          <option>Fashion</option><option>Music</option><option>Dance</option><option>Gaming</option>
-          <option>Education</option><option>Business</option><option>Lifestyle</option><option>Sports</option>
-          <option>Travel</option><option>Tech</option><option>Other</option>
-        </select>
-      </div>
-      <div class="field" id="obNicheOtherWrap" style="display:none">
-        <label for="obNicheOther">Tell us your niche</label>
-        <input class="input" id="obNicheOther" maxlength="40" placeholder="e.g. Gardening, Real estate…">
+        <div class="niche-picker" id="obNichePicker"></div>
       </div>
     </section>
 
@@ -80,6 +69,7 @@
     <p class="ob-skipall"><a href="/app" id="obSkipAll">Skip all → take me to my dashboard</a></p>
   </div>
 </main>
+<script src="/js/niche-chips.js"></script>
 <script src="/js/onboarding.js"></script>
 </body>
 </html>
