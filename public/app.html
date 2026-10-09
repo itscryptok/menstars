@@ -86,6 +86,21 @@
   <section id="view-profile" hidden>
     <div class="app-head"><h2>🙋 My profile</h2></div>
     <div class="card">
+      <h3>Profile</h3>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:14px">Your display name and the brand you promote show on your public in-app profile.</p>
+      <div class="field">
+        <label for="pfName">Display name</label>
+        <input class="input" id="pfName" maxlength="60" placeholder="Your name">
+      </div>
+      <div class="field">
+        <label for="pfBrand">Top brand I promote (optional) <i class="info-icon" data-tip="pfBrandTip">i</i></label>
+        <div class="info-pop" id="pfBrandTip">List a brand you promote — either one that pays you or one you just like a lot. Leave this blank if you don't have a brand to promote right now.</div>
+        <input class="input" id="pfBrand" maxlength="80" placeholder="e.g. Nike, Shein, my own shop…">
+      </div>
+      <button class="btn" id="profileSave">Save profile</button>
+      <div class="form-err" id="profileErr" style="margin-top:10px"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
       <h3>Claim your handles</h3>
       <p style="color:var(--muted);font-size:14px;margin-bottom:14px">Tell MEN who you are on each platform. When someone adds your username as an engager, they&rsquo;ll land on your in-app profile first — showing your links and your total stars.</p>
       <div class="handles-grid" id="handlesGrid"></div>

@@ -36,10 +36,39 @@
     $("acctEmail").textContent = me.email;
     $("acctName").textContent = me.displayName || "—";
     $("acctSince").textContent = new Date(me.createdAt).toLocaleDateString();
+    $("pfName").value = me.displayName || "";
+    $("pfBrand").value = me.topBrand || "";
     renderTabs();
     renderHandlesForm();
     await refreshAll();
   }
+
+  // info tooltip toggle (profile page)
+  document.querySelectorAll(".info-icon").forEach((ico) => {
+    ico.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pop = document.getElementById(ico.dataset.tip);
+      if (pop) pop.classList.toggle("show");
+    });
+  });
+
+  $("profileSave").onclick = async () => {
+    const errEl = $("profileErr");
+    errEl.style.display = "none";
+    try {
+      const d = await api("/api/account", {
+        method: "PUT",
+        body: JSON.stringify({ displayName: $("pfName").value.trim(), topBrand: $("pfBrand").value.trim() }),
+      });
+      me = d.user;
+      $("userChip").textContent = me.displayName || me.email;
+      $("acctName").textContent = me.displayName || "—";
+      renderMyProfileLinks();
+      const btn = $("profileSave");
+      btn.textContent = "Saved ✓";
+      setTimeout(() => (btn.textContent = "Save profile"), 1500);
+    } catch (e) { errEl.textContent = e.message; errEl.style.display = "block"; }
+  };
 
   // ---------- tabs ----------
   function renderTabs() {

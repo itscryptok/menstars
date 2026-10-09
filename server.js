@@ -88,6 +88,7 @@ function publicUser(u) {
     id: u.id,
     email: u.email,
     displayName: u.displayName,
+    topBrand: u.topBrand || null,
     suspended: !!u.suspended,
     createdAt: u.createdAt,
   };
@@ -109,6 +110,7 @@ app.post("/api/auth/signup", async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
     const displayName = String(req.body.displayName || "").trim().slice(0, 60) || null;
+    const topBrand = String(req.body.topBrand || "").trim().slice(0, 80) || null;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return res.status(400).json({ error: "Enter a valid email address." });
     if (password.length < 8)
@@ -116,7 +118,7 @@ app.post("/api/auth/signup", async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: "That email is already registered. Try logging in." });
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { email, passwordHash, displayName } });
+    const user = await prisma.user.create({ data: { email, passwordHash, displayName, topBrand } });
     const token = crypto.randomBytes(32).toString("hex");
     await prisma.session.create({
       data: { token, userId: user.id, expiresAt: new Date(Date.now() + SESSION_DAYS * 864e5) },
@@ -171,6 +173,22 @@ app.delete("/api/auth/account", requireAuth, async (req, res) => {
 app.get("/api/auth/me", async (req, res) => {
   if (!req.user) return res.json({ user: null });
   res.json({ user: publicUser(req.user), handles: await getHandlesMap(req.user.id) });
+});
+
+// Update own profile: display name + top brand (both optional).
+app.put("/api/account", requireAuth, async (req, res) => {
+  try {
+    const data = {};
+    if (req.body.displayName !== undefined)
+      data.displayName = String(req.body.displayName || "").trim().slice(0, 60) || null;
+    if (req.body.topBrand !== undefined)
+      data.topBrand = String(req.body.topBrand || "").trim().slice(0, 80) || null;
+    const user = await prisma.user.update({ where: { id: req.user.id }, data });
+    res.json({ user: publicUser(user) });
+  } catch (e) {
+    console.error("account update error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
 });
 
 // ---------- claimed handles ----------
@@ -412,6 +430,7 @@ app.get("/api/profile/:platform/:handle", async (req, res) => {
       handle: claimed.handle,
       platform,
       platformLabel: PLATFORMS[platform].label,
+      topBrand: claimed.user.topBrand || null,
       totalStars: agg._sum.stars || 0,
       memberSince: claimed.user.createdAt,
       links: claimed.user.handles.map((h) => ({
@@ -495,6 +514,7 @@ async function aggregatedTop(platform, limit = 7) {
     rank += 1;
     const reg = await prisma.claimedHandle.findFirst({
       where: { platform, handle: { equals: r.h, mode: "insensitive" } },
+      include: { user: { select: { topBrand: true } } },
     });
     out.push({
       rank,
@@ -502,6 +522,7 @@ async function aggregatedTop(platform, limit = 7) {
       platform,
       totalStars: r.total_stars,
       contributors: r.contributors,
+      topBrand: (reg && reg.user.topBrand) || null,
       link: reg
         ? { kind: "internal", url: `/profile/${platform}/${encodeURIComponent(reg.handle)}` }
         : { kind: "external", url: PLATFORMS[platform].profileUrl(r.display) },
@@ -653,7 +674,7 @@ app.get("/api/addy/users", requireAdmin, async (req, res) => {
       prisma.user.findMany({
         where,
         select: {
-          id: true, email: true, displayName: true, suspended: true, createdAt: true,
+          id: true, email: true, displayName: true, topBrand: true, suspended: true, createdAt: true,
           handles: { select: { platform: true, handle: true } },
           _count: { select: { engagers: true, notes: true } },
         },
@@ -735,9 +756,9 @@ app.get("/api/addy/leaderboard.csv", requireAdmin, async (req, res) => {
     if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
     const top = await aggregatedTop(platform, 100);
     const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = ["rank,handle,platform,total_stars,contributors,profile_url"];
+    const lines = ["rank,handle,platform,total_stars,contributors,promotes_brand,profile_url"];
     for (const t of top) {
-      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc(t.link.url)].join(","));
+      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc(t.topBrand || ""), esc(t.link.url)].join(","));
     }
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="menstars-top-engagers-${platform}.csv"`);

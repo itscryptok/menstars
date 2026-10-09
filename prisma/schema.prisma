@@ -12,6 +12,7 @@ model User {
   email        String          @unique
   passwordHash String
   displayName  String?
+  topBrand     String?
   suspended    Boolean         @default(false)
   createdAt    DateTime        @default(now())
   handles      ClaimedHandle[]

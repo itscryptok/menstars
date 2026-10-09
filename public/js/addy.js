@@ -103,10 +103,11 @@
     const q = $("userSearch").value.trim();
     const d = await api(`/api/addy/users?q=${encodeURIComponent(q)}&take=25&skip=${userSkip}`);
     const pages = Math.ceil(d.total / 25);
-    let h = `<table class="adm"><tr><th>User</th><th>Handles</th><th>Engagers</th><th>Joined</th><th>Status</th><th></th></tr>`;
+    let h = `<table class="adm"><tr><th>User</th><th>Promotes</th><th>Handles</th><th>Engagers</th><th>Joined</th><th>Status</th><th></th></tr>`;
     for (const u of d.users) {
       const handles = u.handles.map((x) => `${esc(PLATFORMS[x.platform] || x.platform)}: @${esc(x.handle)}`).join("<br>") || "—";
       h += `<tr><td><b>${esc(u.displayName || "(no name)")}</b><br><span style="color:var(--muted)">${esc(u.email)}</span></td>
+        <td>${u.topBrand ? esc(u.topBrand) : '<span style="color:var(--faint)">—</span>'}</td>
         <td>${handles}</td><td>${u._count.engagers}</td>
         <td>${new Date(u.createdAt).toLocaleDateString()}</td>
         <td>${u.suspended ? '<span class="pill bad">suspended</span>' : '<span class="pill ok">active</span>'}</td>

@@ -63,6 +63,11 @@ textarea.input{min-height:90px;resize:vertical}
 .form-card p.sub{color:var(--muted);font-size:14px;margin-bottom:18px}
 .form-err{background:rgba(229,72,77,.12);border:1px solid var(--danger);color:#ffb4b8;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:14px;display:none}
 .form-switch{text-align:center;margin-top:16px;color:var(--muted);font-size:14px}
+/* info tooltip */
+.info-icon{display:inline-flex;width:17px;height:17px;border-radius:50%;border:1px solid var(--faint);color:var(--faint);font-size:11px;font-weight:800;align-items:center;justify-content:center;cursor:pointer;margin-left:6px;font-style:normal;vertical-align:1px}
+.info-icon:hover{border-color:var(--lime);color:var(--lime)}
+.info-pop{display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);margin-top:8px;font-weight:400}
+.info-pop.show{display:block}
 /* app */
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px}
 .tab{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:999px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
