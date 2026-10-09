@@ -65,7 +65,7 @@ async function authMiddleware(req, res, next) {
         where: { token },
         include: { user: true },
       });
-      if (sess && sess.expiresAt > new Date()) {
+      if (sess && sess.expiresAt > new Date() && !sess.user.suspended) {
         req.user = sess.user;
       } else if (sess) {
         await prisma.session.delete({ where: { token } }).catch(() => {});
@@ -88,6 +88,7 @@ function publicUser(u) {
     id: u.id,
     email: u.email,
     displayName: u.displayName,
+    suspended: !!u.suspended,
     createdAt: u.createdAt,
   };
 }
@@ -135,6 +136,8 @@ app.post("/api/auth/login", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash)))
       return res.status(400).json({ error: "Email or password is wrong." });
+    if (user.suspended)
+      return res.status(403).json({ error: "This account has been suspended." });
     const token = crypto.randomBytes(32).toString("hex");
     await prisma.session.create({
       data: { token, userId: user.id, expiresAt: new Date(Date.now() + SESSION_DAYS * 864e5) },
@@ -472,6 +475,327 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ---------- aggregated platform-wide leaderboard ----------
+// Unique engager = platform + lowercased handle. Ranked by TOTAL stars from
+// every contributor combined. Public (advertiser/buyer-facing).
+async function aggregatedTop(platform, limit = 7) {
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT platform, MIN(username) AS display, LOWER(username) AS h,
+            SUM(stars)::int AS total_stars, COUNT(DISTINCT "userId")::int AS contributors
+     FROM "Engager" WHERE platform = $1
+     GROUP BY platform, LOWER(username)
+     ORDER BY total_stars DESC, contributors DESC
+     LIMIT $2`,
+    platform,
+    limit
+  );
+  const out = [];
+  let rank = 0;
+  for (const r of rows) {
+    rank += 1;
+    const reg = await prisma.claimedHandle.findFirst({
+      where: { platform, handle: { equals: r.h, mode: "insensitive" } },
+    });
+    out.push({
+      rank,
+      handle: r.display,
+      platform,
+      totalStars: r.total_stars,
+      contributors: r.contributors,
+      link: reg
+        ? { kind: "internal", url: `/profile/${platform}/${encodeURIComponent(reg.handle)}` }
+        : { kind: "external", url: PLATFORMS[platform].profileUrl(r.display) },
+    });
+  }
+  return out;
+}
+
+app.get("/api/top-engagers", async (req, res) => {
+  try {
+    const platform = String(req.query.platform || "");
+    if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
+    res.json({ platform, top: await aggregatedTop(platform, 7) });
+  } catch (e) {
+    console.error("top-engagers error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+// ---------- admin (/addy) ----------
+// Password-only. Bcrypt hash comes from env ADMIN_PASSWORD_HASH (set by Yemi
+// via secure vault). Session = HMAC-signed timestamp cookie, 12h expiry.
+// PRIVACY RULE: admin queries NEVER select users' private engager notes or
+// notepad contents — those fields are excluded from every admin query below.
+const ADMIN_COOKIE = "men_admin";
+const ADMIN_SESSION_HOURS = 12;
+const adminAttempts = new Map(); // ip -> [timestamps]
+
+function clientIp(req) {
+  return (
+    String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
+    (req.socket && req.socket.remoteAddress) ||
+    "unknown"
+  );
+}
+
+function adminRateLimited(req) {
+  const ip = clientIp(req);
+  const now = Date.now();
+  const arr = (adminAttempts.get(ip) || []).filter((t) => now - t < 60000);
+  if (adminAttempts.size > 2000) adminAttempts.clear();
+  adminAttempts.set(ip, arr);
+  return arr.length >= 5;
+}
+
+function adminSecret() {
+  return process.env.SESSION_SECRET || "menstars-dev-secret";
+}
+
+function signAdmin(expiry) {
+  const data = String(expiry);
+  const sig = crypto.createHmac("sha256", adminSecret()).update(data).digest("hex");
+  return Buffer.from(data).toString("base64url") + "." + sig;
+}
+
+function verifyAdmin(req) {
+  try {
+    const token = parseCookies(req)[ADMIN_COOKIE];
+    if (!token) return false;
+    const parts = token.split(".");
+    if (parts.length !== 2) return false;
+    const expiry = parseInt(Buffer.from(parts[0], "base64url").toString("utf8"), 10);
+    if (!expiry || expiry < Date.now()) return false;
+    const sig = crypto.createHmac("sha256", adminSecret()).update(String(expiry)).digest("hex");
+    if (sig.length !== parts[1].length) return false;
+    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(parts[1]));
+  } catch {
+    return false;
+  }
+}
+
+function requireAdmin(req, res, next) {
+  if (!verifyAdmin(req)) return res.status(401).json({ error: "Admin login required." });
+  next();
+}
+
+app.post("/api/addy/login", async (req, res) => {
+  try {
+    if (adminRateLimited(req))
+      return res.status(429).json({ error: "Too many attempts. Wait a minute and try again." });
+    const ip = clientIp(req);
+    adminAttempts.set(ip, [...(adminAttempts.get(ip) || []), Date.now()]);
+    const hash = process.env.ADMIN_PASSWORD_HASH || "";
+    const password = String(req.body.password || "");
+    if (!hash || !password || !(await bcrypt.compare(password, hash))) {
+      return res.status(401).json({ error: "Wrong password." });
+    }
+    const expiry = Date.now() + ADMIN_SESSION_HOURS * 3600 * 1000;
+    res.setHeader(
+      "Set-Cookie",
+      `${ADMIN_COOKIE}=${signAdmin(expiry)}; HttpOnly; Path=/; Max-Age=${ADMIN_SESSION_HOURS * 3600}; SameSite=Lax`
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("addy login error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+app.post("/api/addy/logout", (req, res) => {
+  res.setHeader("Set-Cookie", `${ADMIN_COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+  res.json({ ok: true });
+});
+
+app.get("/api/addy/me", (req, res) => res.json({ admin: verifyAdmin(req) }));
+
+app.get("/api/addy/overview", requireAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const d7 = new Date(now.getTime() - 7 * 864e5);
+    const d30 = new Date(now.getTime() - 30 * 864e5);
+    const [totalUsers, signups7, signups30, totalEngagers, starsAgg, perPlatform, perPlatformUsers] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { createdAt: { gte: d7 } } }),
+        prisma.user.count({ where: { createdAt: { gte: d30 } } }),
+        prisma.engager.count(),
+        prisma.engager.aggregate({ _sum: { stars: true } }),
+        prisma.engager.groupBy({ by: ["platform"], _count: { _all: true }, _sum: { stars: true } }),
+        prisma.claimedHandle.groupBy({ by: ["platform"], _count: { _all: true } }),
+      ]);
+    res.json({
+      totalUsers, signups7, signups30, totalEngagers,
+      totalStars: starsAgg._sum.stars || 0,
+      perPlatform: perPlatform.map((p) => ({
+        platform: p.platform,
+        engagers: p._count._all,
+        stars: p._sum.stars || 0,
+        claimedHandles: (perPlatformUsers.find((x) => x.platform === p.platform) || { _count: { _all: 0 } })._count._all,
+      })),
+    });
+  } catch (e) {
+    console.error("addy overview error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
+// Users: safe fields only — NEVER notes/notepad contents.
+app.get("/api/addy/users", requireAdmin, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const take = Math.min(parseInt(req.query.take || "25", 10) || 25, 100);
+    const skip = parseInt(req.query.skip || "0", 10) || 0;
+    const where = q
+      ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { displayName: { contains: q, mode: "insensitive" } }] }
+      : {};
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true, email: true, displayName: true, suspended: true, createdAt: true,
+          handles: { select: { platform: true, handle: true } },
+          _count: { select: { engagers: true, notes: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take, skip,
+      }),
+    ]);
+    res.json({ total, users });
+  } catch (e) {
+    console.error("addy users error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
+app.post("/api/addy/users/:id/suspend", requireAdmin, async (req, res) => {
+  await prisma.user.update({ where: { id: req.params.id }, data: { suspended: true } }).catch(() => null);
+  await prisma.session.deleteMany({ where: { userId: req.params.id } }).catch(() => {});
+  res.json({ ok: true });
+});
+
+app.post("/api/addy/users/:id/unsuspend", requireAdmin, async (req, res) => {
+  await prisma.user.update({ where: { id: req.params.id }, data: { suspended: false } }).catch(() => null);
+  res.json({ ok: true });
+});
+
+app.delete("/api/addy/users/:id", requireAdmin, async (req, res) => {
+  await prisma.user.delete({ where: { id: req.params.id } }).catch(() => null);
+  res.json({ ok: true });
+});
+
+// Engager entries for moderation: metadata only — NEVER the private notes.
+app.get("/api/addy/engagers", requireAdmin, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const platform = String(req.query.platform || "");
+    const take = Math.min(parseInt(req.query.take || "25", 10) || 25, 100);
+    const skip = parseInt(req.query.skip || "0", 10) || 0;
+    const where = {};
+    if (platform && PLATFORMS[platform]) where.platform = platform;
+    if (q) where.username = { contains: q, mode: "insensitive" };
+    const [total, rows] = await Promise.all([
+      prisma.engager.count({ where }),
+      prisma.engager.findMany({
+        where,
+        select: {
+          id: true, username: true, platform: true, stars: true, createdAt: true,
+          user: { select: { email: true, displayName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take, skip,
+      }),
+    ]);
+    res.json({ total, engagers: rows });
+  } catch (e) {
+    console.error("addy engagers error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
+app.delete("/api/addy/engagers/:id", requireAdmin, async (req, res) => {
+  await prisma.engager.delete({ where: { id: req.params.id } }).catch(() => null);
+  res.json({ ok: true });
+});
+
+app.get("/api/addy/leaderboard", requireAdmin, async (req, res) => {
+  try {
+    const platform = String(req.query.platform || "");
+    if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
+    res.json({ platform, top: await aggregatedTop(platform, 50) });
+  } catch (e) {
+    console.error("addy leaderboard error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
+app.get("/api/addy/leaderboard.csv", requireAdmin, async (req, res) => {
+  try {
+    const platform = String(req.query.platform || "");
+    if (!PLATFORMS[platform]) return res.status(400).json({ error: "Unknown platform." });
+    const top = await aggregatedTop(platform, 100);
+    const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = ["rank,handle,platform,total_stars,contributors,profile_url"];
+    for (const t of top) {
+      lines.push([t.rank, esc(t.handle), t.platform, t.totalStars, t.contributors, esc(t.link.url)].join(","));
+    }
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="menstars-top-engagers-${platform}.csv"`);
+    res.send(lines.join("\n"));
+  } catch (e) {
+    console.error("addy csv error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
+app.get("/api/addy/stars", requireAdmin, async (req, res) => {
+  try {
+    const [total, perPlatform, givers] = await Promise.all([
+      prisma.engager.aggregate({ _sum: { stars: true } }),
+      prisma.engager.groupBy({ by: ["platform"], _sum: { stars: true }, _count: { _all: true } }),
+      prisma.engager.groupBy({
+        by: ["userId"], _sum: { stars: true },
+        orderBy: { _sum: { stars: "desc" } }, take: 20,
+      }),
+    ]);
+    const userIds = givers.map((g) => g.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, displayName: true },
+    });
+    const byId = Object.fromEntries(users.map((u) => [u.id, u]));
+    res.json({
+      totalStars: total._sum.stars || 0,
+      perPlatform: perPlatform.map((p) => ({ platform: p.platform, stars: p._sum.stars || 0, entries: p._count._all })),
+      topContributors: givers.map((g) => ({
+        starsGiven: g._sum.stars || 0,
+        email: (byId[g.userId] || {}).email || "(deleted)",
+        displayName: (byId[g.userId] || {}).displayName || null,
+      })),
+    });
+  } catch (e) {
+    console.error("addy stars error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
+app.get("/api/addy/system", requireAdmin, async (req, res) => {
+  try {
+    const [users, engagers, handles, notes, sessions] = await Promise.all([
+      prisma.user.count(), prisma.engager.count(), prisma.claimedHandle.count(),
+      prisma.note.count(), prisma.session.count(),
+    ]);
+    res.json({
+      uptimeSec: Math.round(process.uptime()),
+      node: process.version,
+      counts: { users, engagers, handles, notes, sessions },
+    });
+  } catch (e) {
+    console.error("addy system error:", e.message);
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
+
 // ---------- pages ----------
 app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"] }));
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
@@ -479,6 +803,12 @@ app.get("/login", (req, res) => res.sendFile(path.join(__dirname, "public", "log
 app.get("/app", (req, res) => res.sendFile(path.join(__dirname, "public", "app.html")));
 app.get("/profile/:platform/:handle", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "profile.html"))
+);
+app.get("/top-engagers", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "top-engagers.html"))
+);
+app.get("/addy", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "addy.html"))
 );
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "index.html")));
 
