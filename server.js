@@ -1,4 +1,4 @@
-// Menstars — My Engager Network (MEN). Express + Prisma + PostgreSQL
+// Menstars HQ — My Engager Network (MEN). Express + Prisma + PostgreSQL
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
@@ -584,6 +584,30 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
     nicheJoin = 'JOIN "User" u ON u.id = e."userId" AND $3 = ANY(u.niches)';
     params.push(nicheFilter);
   }
+  // Test accounts (@example.com) are demo filler: as soon as a platform has
+  // 7+ ranked engagers in total, their records drop off public display
+  // automatically (e.g. 3 test records gone, 4 real ones left).
+  const totalRow = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int AS c FROM (
+       SELECT LOWER(e.username) AS h FROM "Engager" e
+       WHERE e.platform = $1 AND e.stars > 0
+       GROUP BY LOWER(e.username)
+     ) t`,
+    platform
+  );
+  const hideTests = !!(totalRow[0] && totalRow[0].c >= 7);
+  let testJoin = "";
+  let testWhere = "";
+  if (hideTests) {
+    params.push("%@example.com");
+    const p = `$${params.length}`;
+    if (nicheFilter) {
+      testWhere = ` AND u.email NOT LIKE ${p}`;
+    } else {
+      testJoin = `JOIN "User" u ON u.id = e."userId"`;
+      testWhere = ` AND u.email NOT LIKE ${p}`;
+    }
+  }
   let handleWhere = "";
   if (handleQuery) {
     // Escape LIKE wildcards so the query is a literal substring match.
@@ -599,8 +623,8 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
   const rows = await prisma.$queryRawUnsafe(
     `SELECT e.platform, MIN(e.username) AS display, LOWER(e.username) AS h,
             SUM(e.stars)::int AS total_stars, COUNT(DISTINCT e."userId")::int AS contributors
-     FROM "Engager" e ${nicheJoin}
-     WHERE e.platform = $1 AND e.stars > 0${handleWhere}${contributorWhere}
+     FROM "Engager" e ${nicheJoin}${testJoin}
+     WHERE e.platform = $1 AND e.stars > 0${handleWhere}${contributorWhere}${testWhere}
      GROUP BY e.platform, LOWER(e.username)
      HAVING SUM(e.stars) > 0
      ORDER BY total_stars DESC, contributors DESC
@@ -618,7 +642,7 @@ async function aggregatedTop(platform, limit = 7, nicheFilter = null, brandDeals
     const nicheRows = await prisma.$queryRawUnsafe(
       `SELECT DISTINCT unnest(u.niches) AS niche FROM "Engager" e
        JOIN "User" u ON u.id = e."userId"
-       WHERE e.platform = $1 AND LOWER(e.username) = $2 AND e.stars > 0`,
+       WHERE e.platform = $1 AND LOWER(e.username) = $2 AND e.stars > 0${hideTests ? ` AND u.email NOT LIKE '%@example.com'` : ""}`,
       platform,
       r.h
     );
