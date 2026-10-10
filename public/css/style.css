@@ -153,7 +153,7 @@ main.with-nav{padding-bottom:86px}
 .reg-badge{display:inline-block;background:var(--lime);color:var(--ink);font-size:11px;font-weight:800;border-radius:999px;padding:2px 10px;margin-left:8px;vertical-align:middle}
 /* top7 */
 .top7-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.top7-head h2{margin:0;flex:1 1 auto;min-width:0;font-size:clamp(16px,4.5vw,20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top7-head h2{margin:0;flex:1 1 auto;min-width:0;font-size:clamp(16px,4.5vw,20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 .top7-head .btn{flex:0 0 auto;white-space:nowrap}
 @media (max-width:480px){
   .top7-head{gap:8px}
@@ -265,4 +265,3 @@ main.with-nav{padding-bottom:86px}
 .niche-other-row .input{flex:1}
 .filter-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
 .filter-row .input{width:auto;min-width:180px}
-.filter-label{font-size:13.5px;color:var(--muted);font-weight:700}
