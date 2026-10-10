@@ -32,12 +32,19 @@ a{color:var(--lime);text-decoration:none}
 a:hover{text-decoration:underline}
 .wrap{max-width:1060px;margin:0 auto;padding:0 18px}
 /* header */
-.site-header{position:sticky;top:0;z-index:50;background:rgba(46,51,61,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+.site-header{position:sticky;top:0;z-index:61;background:rgba(46,51,61,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
 .site-header .wrap{display:flex;align-items:center;gap:14px;padding:12px 18px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.5px;color:var(--text)}
 .logo:hover{text-decoration:none}
 .back-arrow{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;border:1px solid var(--border);color:var(--text);font-size:18px;font-weight:800;flex:0 0 auto}
 .back-arrow:hover{text-decoration:none;filter:brightness(1.2)}
+/* burger menu */
+.burger-wrap{position:relative;flex:0 0 auto}
+.burger-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:20px;font-weight:800;cursor:pointer}
+.burger-btn:hover{filter:brightness(1.15)}
+.burger-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:240px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.35);padding:8px;z-index:100}
+.burger-menu a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--text);font-weight:600;font-size:15px;white-space:nowrap}
+.burger-menu a:hover{background:var(--bg2);text-decoration:none}
 .engager-tagline{text-align:center;margin:10px 18px 0;color:#fff;font-weight:800;white-space:nowrap;font-size:clamp(13px,4vw,17px)}
 .logo-mark{width:34px;height:34px;border-radius:10px;background:var(--lime);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px}
 img.logo-mark{object-fit:cover;display:block;padding:0}
