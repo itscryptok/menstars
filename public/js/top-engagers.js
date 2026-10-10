@@ -27,8 +27,8 @@
   function updateTitle() {
     const t = $("boardTitle");
     if (t) t.textContent = contributor
-      ? `🏆 @${contributor}'s Top 7 — ${PLATFORMS[platform]}`
-      : "🏆 Top 7 — " + PLATFORMS[platform] + (niche ? " · " + niche : "");
+      ? `🏆 @${contributor}'s Top Engagers`
+      : "🏆 Top Engagers" + (niche ? " · " + niche : "");
     const sub = $("boardSub");
     if (sub) sub.textContent = contributor
       ? `The 7 most-starred engagers on @${contributor}'s list.`
