@@ -22,3 +22,28 @@
     }
   });
 })();
+
+/* Burger menu toggle (shared header nav). */
+(function () {
+  function close() {
+    var m = document.getElementById("burgerMenu");
+    var b = document.getElementById("burgerBtn");
+    if (m) m.hidden = true;
+    if (b) b.setAttribute("aria-expanded", "false");
+  }
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest && e.target.closest("#burgerBtn");
+    var menu = document.getElementById("burgerMenu");
+    if (!menu) return;
+    if (btn) {
+      var willOpen = menu.hidden;
+      menu.hidden = !willOpen;
+      btn.setAttribute("aria-expanded", String(willOpen));
+      return;
+    }
+    if (!e.target.closest || !e.target.closest("#burgerMenu")) close();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") close();
+  });
+})();
