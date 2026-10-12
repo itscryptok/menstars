@@ -69,6 +69,14 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
   <!-- DASHBOARD -->
   <div id="addyDash" style="display:none">
     <div class="priv-note">🔒 Privacy rule: admin tools <b>never</b> show users' private engager notes or notepad contents. Those fields are excluded from every query on this page.</div>
+    <div class="priv-note" id="brandLinkBox" style="border-color:var(--lime)">
+      <b>🏷️ Brand shortlists</b> — private page, <b>not</b> in the public menu. Share this link with brands only when they ask:
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <input class="input" id="brandLinkInput" readonly style="flex:1;min-width:220px" aria-label="Brand shortlists page link">
+        <button class="btn small" id="brandLinkCopy" type="button">Copy link</button>
+      </div>
+      <div style="margin-top:8px;font-size:13px"><span id="brandInqCount">—</span> · <a href="#" id="brandInqJump">view inquiries</a></div>
+    </div>
     <div class="addy-tabs" id="addyTabs"></div>
 
     <section id="ap-overview">
@@ -78,6 +86,12 @@ table.adm th{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter
       <div id="ovPlatforms"></div>
       <h3 style="margin-top:8px">Per niche</h3>
       <div id="ovNiches"></div>
+    </section>
+
+    <section id="ap-brands" hidden>
+      <h2>Brand shortlist inquiries</h2>
+      <p style="color:var(--muted);font-size:14px">Brands request ranked niche shortlists ($50 each) from the private /brands page. Reply with payment details, then mark each inquiry paid and delivered.</p>
+      <div id="brandsTable"></div>
     </section>
 
     <section id="ap-users" hidden>
