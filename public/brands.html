@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Shortlists — Menstars HQ</title>
+<meta name="description" content="Buy ranked creator shortlists by niche from Menstars HQ — Top 7 engagers per platform, curated from live community rankings. Discovery and curation only.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script>try{if(localStorage.getItem('menstars-theme')==='night')document.documentElement.setAttribute('data-theme','night')}catch(e){}</script>
+<script src="/js/theme.js" defer></script>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.short-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:22px 0}
+.short-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column}
+.short-card h2{margin:0 0 4px;font-size:24px}
+.short-card .price{font-size:30px;font-weight:900;color:var(--lime);margin:6px 0}
+.short-card .price small{font-size:13px;color:var(--muted);font-weight:600}
+.short-card .teaser{margin:12px 0;font-size:13.5px}
+.short-card .teaser .plat{margin-top:10px}
+.short-card .teaser .plat b{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.short-card .teaser ol{margin:6px 0 0;padding-left:22px}
+.short-card .teaser li{margin:3px 0}
+.short-card .teaser li a{color:inherit}
+.short-card .grow{color:var(--muted);font-size:13px;font-style:italic}
+.inquire-card{background:var(--bg2);border:1px solid var(--lime);border-radius:16px;padding:26px;margin:26px 0;max-width:560px}
+.inquire-card h2{margin-top:0}
+.fineprint{font-size:13px;color:var(--muted);margin-top:18px;max-width:640px}
+.fineprint b{color:inherit}
+.ok-msg{background:var(--lime-soft);border:1px solid var(--lime);border-radius:10px;padding:12px 16px;margin-top:12px}
+</style>
+</head>
+<body>
+<button id="themeToggle" class="theme-toggle" aria-label="Toggle day/night mode">🌙</button>
+<header class="site-header">
+  <div class="wrap">
+    <a class="back-arrow" href="/" aria-label="Back to home">&#8592;</a>
+    <a class="logo" href="/"><img class="logo-mark" src="/logo.webp" alt="Menstars HQ logo"><span class="logo-text">Menstars HQ<small>My Engager Network (MEN)</small></span></a>
+    <span class="nav-spacer"></span>
+    <a class="btn ghost small" href="/login">Log in</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero" style="padding:44px 0 18px">
+    <span class="kicker"><span class="rule"></span>Menstars HQ · For brands</span>
+    <h1>Brand <span class="lime">shortlists.</span></h1>
+    <p class="lede">Ranked creators by niche, curated from live Menstars HQ community rankings. Each shortlist is the <b>Top 7 ranked engagers per platform</b> in one niche — refreshed from real contributor stars, not a static list.</p>
+  </section>
+
+  <div class="short-grid" id="shortGrid"><p class="sub">Loading shortlists…</p></div>
+
+  <section class="inquire-card" id="inquireSection">
+    <h2>Request a shortlist</h2>
+    <p class="sub">Pick a shortlist and tell us where to send it. We reply with payment details and deliver your ranked list.</p>
+    <div class="form-err" id="inqErr" style="display:none"></div>
+    <form id="inqForm">
+      <div class="field">
+        <label for="inqNiche">Shortlist</label>
+        <select class="input" id="inqNiche" required>
+          <option value="Beauty">Beauty — $50</option>
+          <option value="Fashion">Fashion — $50</option>
+          <option value="Food">Food — $50</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="inqBrand">Brand / company name</label>
+        <input class="input" id="inqBrand" maxlength="80" required placeholder="e.g. Glow Cosmetics">
+      </div>
+      <div class="field">
+        <label for="inqEmail">Work email</label>
+        <input class="input" id="inqEmail" type="email" maxlength="120" required placeholder="you@company.com">
+      </div>
+      <div class="field">
+        <label for="inqMsg">Anything we should know? (optional)</label>
+        <input class="input" id="inqMsg" maxlength="500" placeholder="Campaign timing, audience, platforms you care about…">
+      </div>
+      <button class="btn block" type="submit" id="inqBtn">Request shortlist — $50</button>
+    </form>
+    <div class="ok-msg" id="inqOk" style="display:none">Request received. We&rsquo;ll be in touch shortly with payment details and your shortlist.</div>
+  </section>
+
+  <p class="fineprint"><b>What you&rsquo;re buying:</b> discovery and curation — a ranked shortlist drawn from public community rankings. <b>What we never sell:</b> contact details, introductions, or anyone&rsquo;s private information. Creator profiles are linked publicly so you can reach out directly. Rankings update as the community grows.</p>
+</main>
+<footer><div class="wrap"><nav class="foot-nav" aria-label="Quick links"><a href="/">Home</a><a href="/top-engagers">Top Engagers</a><a href="/app">My Network</a><a href="/login">Log In</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a></nav><p>© 2026 Menstars HQ — My Engager Network (MEN). It&rsquo;s a MEN&rsquo;s world. Star my Engagers. · by <a href="https://cryptok.online" target="_blank" rel="noopener">Cryptok Solutions</a></p></div></footer>
+<script src="/js/brands.js"></script>
+</body>
+</html>
