@@ -713,6 +713,99 @@ app.get("/api/top-engagers", async (req, res) => {
   }
 });
 
+// ---------- brand shortlists (public page, private link) ----------
+// Sells discovery + curation only: ranked niche shortlists. Stars, contact
+// details and introductions are NEVER sold. The /brands page is intentionally
+// NOT linked in the public menu/footer — Yemi shares the link with brands on
+// request (manual link lives at the top of /addy). v1 is inquiry-only;
+// Stripe checkout comes later.
+const BRAND_SHORTLISTS = [
+  { niche: "Beauty", price: 50 },
+  { niche: "Fashion", price: 50 },
+  { niche: "Food", price: 50 },
+];
+const INQUIRY_STATUSES = ["new", "contacted", "paid", "delivered"];
+
+app.get("/api/brands/shortlists", async (req, res) => {
+  try {
+    const out = [];
+    for (const s of BRAND_SHORTLISTS) {
+      const platforms = {};
+      let totalRanked = 0;
+      for (const platform of PLATFORM_KEYS) {
+        // Public-safe rows only: rank, handle, stars, profile link.
+        const top = await aggregatedTop(platform, 7, s.niche);
+        totalRanked += top.length;
+        platforms[platform] = top.map((t) => ({
+          rank: t.rank,
+          handle: t.handle,
+          totalStars: t.totalStars,
+          link: t.link,
+        }));
+      }
+      out.push({ niche: s.niche, price: s.price, totalRanked, platforms });
+    }
+    res.json({ shortlists: out });
+  } catch (e) {
+    console.error("brands/shortlists error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+app.post("/api/brands/inquire", async (req, res) => {
+  try {
+    const niche = String(req.body.niche || "").trim();
+    const brandName = String(req.body.brandName || "").trim().slice(0, 80);
+    const email = String(req.body.email || "").trim().slice(0, 120);
+    const message = String(req.body.message || "").trim().slice(0, 500);
+    if (!BRAND_SHORTLISTS.some((s) => s.niche === niche))
+      return res.status(400).json({ error: "Unknown shortlist." });
+    if (brandName.length < 2)
+      return res.status(400).json({ error: "Please enter your brand or company name." });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return res.status(400).json({ error: "Please enter a valid work email." });
+    const inquiry = await prisma.shortlistInquiry.create({
+      data: { niche, brandName, email, message },
+      select: { id: true },
+    });
+    res.json({ ok: true, id: inquiry.id });
+  } catch (e) {
+    console.error("brands/inquire error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+app.get("/api/addy/inquiries", requireAdmin, async (req, res) => {
+  try {
+    const inquiries = await prisma.shortlistInquiry.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const counts = {};
+    for (const i of inquiries) counts[i.status] = (counts[i.status] || 0) + 1;
+    res.json({ inquiries, counts });
+  } catch (e) {
+    console.error("addy/inquiries error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+app.post("/api/addy/inquiries/:id/status", requireAdmin, async (req, res) => {
+  try {
+    const status = String(req.body.status || "");
+    if (!INQUIRY_STATUSES.includes(status))
+      return res.status(400).json({ error: "Unknown status." });
+    await prisma.shortlistInquiry.update({
+      where: { id: String(req.params.id) },
+      data: { status },
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("addy/inquiry-status error:", e.message);
+    res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
 // ---------- admin (/addy) ----------
 // Password-only. Bcrypt hash comes from env ADMIN_PASSWORD_HASH (set by Yemi
 // via secure vault). Session = HMAC-signed timestamp cookie, 12h expiry.
@@ -1093,6 +1186,9 @@ app.get("/onboarding", (req, res) =>
 );
 app.get("/addy", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "addy.html"))
+);
+app.get("/brands", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "brands.html"))
 );
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, "public", "index.html")));
 
