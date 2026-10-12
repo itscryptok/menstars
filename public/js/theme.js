@@ -41,6 +41,8 @@
       btn.setAttribute("aria-expanded", String(willOpen));
       return;
     }
+    var menuLink = e.target.closest && e.target.closest("#burgerMenu a");
+    if (menuLink) { close(); return; }
     if (!e.target.closest || !e.target.closest("#burgerMenu")) close();
   });
   document.addEventListener("keydown", function (e) {
