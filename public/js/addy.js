@@ -31,6 +31,37 @@
     $("addyDash").style.display = "block";
     $("addyLogout").style.display = "inline-flex";
     loadNicheOptions();
+    initBrandLinkBox();
+  }
+
+  // ---------- brand shortlists (private page link + inquiry count) ----------
+  function initBrandLinkBox() {
+    const input = $("brandLinkInput");
+    if (!input || input.dataset.done) return;
+    input.dataset.done = "1";
+    input.value = location.origin + "/brands";
+    $("brandLinkCopy").onclick = async () => {
+      try { await navigator.clipboard.writeText(input.value); }
+      catch { input.select(); document.execCommand("copy"); }
+      const b = $("brandLinkCopy");
+      b.textContent = "Copied ✓";
+      setTimeout(() => { b.textContent = "Copy link"; }, 2000);
+    };
+    $("brandInqJump").onclick = (e) => {
+      e.preventDefault();
+      const tabs = $("addyTabs").querySelectorAll(".tab");
+      tabs.forEach((x) => { if (x.textContent === "Brands") x.click(); });
+    };
+    refreshBrandInqCount();
+  }
+  async function refreshBrandInqCount() {
+    try {
+      const d = await api("/api/addy/inquiries");
+      const n = d.counts && d.counts.new ? d.counts.new : 0;
+      $("brandInqCount").innerHTML = n
+        ? `<b style="color:var(--lime)">${n} new</b> ${n === 1 ? "inquiry" : "inquiries"}`
+        : "No new inquiries";
+    } catch { $("brandInqCount").textContent = "—"; }
   }
 
   // Populate niche filter dropdowns from the live catalog (grows with suggestions).
@@ -88,7 +119,7 @@
   };
 
   // ---------- tabs ----------
-  const TABS = [["overview", "Overview"], ["users", "Contributors"], ["board", "Leaderboard"], ["stars", "Stars"], ["mod", "Moderation"], ["system", "System"]];
+  const TABS = [["overview", "Overview"], ["brands", "Brands"], ["users", "Contributors"], ["board", "Leaderboard"], ["stars", "Stars"], ["mod", "Moderation"], ["system", "System"]];
   function initTabs() {
     const box = $("addyTabs");
     if (box.dataset.done) return;
@@ -101,6 +132,7 @@
         box.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
         TABS.forEach(([k]) => { $("ap-" + k).hidden = k !== key; });
+        if (key === "brands") loadBrands();
         if (key === "users") loadUsers();
         if (key === "board") loadBoard();
         if (key === "stars") loadStars();
@@ -138,6 +170,39 @@
       ? `<table class="adm"><tr><th>Niche</th><th>Contributors</th></tr>` +
         d.perNiche.map((n) => `<tr><td>${esc(n.niche)}</td><td>${n.contributors}</td></tr>`).join("") + `</table>`
       : '<div class="empty">No niches picked yet.</div>';
+  }
+
+  // ---------- brand inquiries ----------
+  const INQ_STATUSES = ["new", "contacted", "paid", "delivered"];
+  async function loadBrands() {
+    const box = $("brandsTable");
+    try {
+      const d = await api("/api/addy/inquiries");
+      refreshBrandInqCount();
+      if (!d.inquiries.length) { box.innerHTML = '<div class="empty">No inquiries yet. Share the /brands link with brands on request.</div>'; return; }
+      let h = `<table class="adm"><tr><th>Date</th><th>Brand</th><th>Email</th><th>Shortlist</th><th>Note</th><th>Status</th></tr>`;
+      for (const q of d.inquiries) {
+        h += `<tr><td style="white-space:nowrap">${new Date(q.createdAt).toLocaleString()}</td>
+          <td><b>${esc(q.brandName)}</b></td><td>${esc(q.email)}</td><td>${esc(q.niche)}</td>
+          <td style="max-width:220px">${esc(q.message) || '<span style="color:var(--faint)">—</span>'}</td>
+          <td><select class="input" data-inq="${q.id}" style="padding:6px 8px">` +
+          INQ_STATUSES.map((s) => `<option value="${s}"${q.status === s ? " selected" : ""}>${s}</option>`).join("") +
+          `</select></td></tr>`;
+      }
+      box.innerHTML = h + `</table><p style="color:var(--muted);font-size:13px;margin-top:8px">${d.inquiries.length} inquiries</p>`;
+      box.querySelectorAll("[data-inq]").forEach((sel) => {
+        sel.onchange = async () => {
+          try {
+            await api("/api/addy/inquiries/" + sel.dataset.inq + "/status", {
+              method: "POST", body: JSON.stringify({ status: sel.value }),
+            });
+            refreshBrandInqCount();
+          } catch (e) { alert(e.message); loadBrands(); }
+        };
+      });
+    } catch (e) {
+      box.innerHTML = `<div class="form-err" style="display:block">${esc(e.message)}</div>`;
+    }
   }
 
   // ---------- users ----------
