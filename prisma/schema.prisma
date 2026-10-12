@@ -86,3 +86,18 @@ model AdminSetting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+// Brand shortlist inquiries (inquiry-only v1; Stripe later). Public-safe: no
+// contributor private data is stored here — just the brand's own request.
+model ShortlistInquiry {
+  id        String   @id @default(cuid())
+  niche     String
+  brandName String
+  email     String
+  message   String   @default("")
+  status    String   @default("new") // new | contacted | paid | delivered
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
